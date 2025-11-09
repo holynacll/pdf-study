@@ -1681,7 +1681,7 @@ Responda com base neste contexto.`;
 
         {/* Painel do Chat */}
         {chatOpen && (
-          <div className={`w-[32rem] ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
+          <div className={`w-[26rem] ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2.5 flex items-center justify-between border-b border-purple-700/50">
               <div className="flex items-center gap-2">
                 <MessageSquare size={20} />
