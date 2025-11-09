@@ -423,6 +423,12 @@ const PDFStudyApp = () => {
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setSelectedText('');
+      setChatOpen(true);
+      // Se estiver em modo expandido, volta para compacto
+      if (pdfViewMode === 'expanded') {
+        setPdfViewMode('compact');
+      }
+      toast.success('Pergunta adicionada ao chat! 💬', { duration: 2 });
     }
   };
 
@@ -434,6 +440,12 @@ const PDFStudyApp = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       setSelectedText('');
+      setChatOpen(true);
+      // Se estiver em modo expandido, volta para compacto
+      if (pdfViewMode === 'expanded') {
+        setPdfViewMode('compact');
+      }
+      toast.success('Texto adicionado ao chat! ✓', { duration: 2 });
     }
   };
 
@@ -443,6 +455,12 @@ const PDFStudyApp = () => {
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setSelectedText('');
+      setChatOpen(true);
+      // Se estiver em modo expandido, volta para compacto
+      if (pdfViewMode === 'expanded') {
+        setPdfViewMode('compact');
+      }
+      toast.success('Tradução solicitada! 🌐', { duration: 2 });
     }
   };
 
@@ -452,6 +470,12 @@ const PDFStudyApp = () => {
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setSelectedText('');
+      setChatOpen(true);
+      // Se estiver em modo expandido, volta para compacto
+      if (pdfViewMode === 'expanded') {
+        setPdfViewMode('compact');
+      }
+      toast.success('Explicação solicitada! 💡', { duration: 2 });
     }
   };
 
@@ -1080,13 +1104,20 @@ Responda com base neste contexto.`;
                     <Bookmark size={20} fill={bookmarks.includes(currentPage) ? 'currentColor' : 'none'} />
                   </button>
                   <button
-                    onClick={() => setPdfViewMode(pdfViewMode === 'compact' ? 'expanded' : 'compact')}
+                    onClick={() => {
+                      const newMode = pdfViewMode === 'compact' ? 'expanded' : 'compact';
+                      setPdfViewMode(newMode);
+                      // Fechar chat quando expandir PDF
+                      if (newMode === 'expanded') {
+                        setChatOpen(false);
+                      }
+                    }}
                     className={`p-2 rounded-lg transition-all duration-200 ${
                       pdfViewMode === 'expanded'
                         ? 'bg-blue-600 text-white'
                         : darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
                     }`}
-                    title={pdfViewMode === 'compact' ? 'Expandir visualização' : 'Compactar visualização'}
+                    title={pdfViewMode === 'compact' ? 'Expandir horizontalmente' : 'Compactar'}
                   >
                     {pdfViewMode === 'expanded' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                   </button>
@@ -1273,15 +1304,15 @@ Responda com base neste contexto.`;
                 </div>
                 
                 {selectedText && (
-                  <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-3 flex items-center gap-3 border-2 border-purple-300 dark:border-purple-600 z-30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-2.5 flex items-center gap-2 border-2 border-purple-300 dark:border-purple-600 z-30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
                     {/* Botão: Pergunte a IA */}
                     <div className="group relative">
                       <button
                         onClick={askAI}
-                        className="p-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        className="p-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
                         title="Pergunte a IA"
                       >
-                        <MessageSquare size={18} />
+                        <MessageSquare size={14} />
                       </button>
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                         Pergunte a IA
@@ -1292,10 +1323,10 @@ Responda com base neste contexto.`;
                     <div className="group relative">
                       <button
                         onClick={translateText}
-                        className="p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
                         title="Traduzir"
                       >
-                        <svg size={18} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                           <path d="M5 8l6 6" />
                           <path d="M4 14l10-10" />
                           <path d="M20 4h-6m6 0v6" />
@@ -1311,10 +1342,10 @@ Responda com base neste contexto.`;
                     <div className="group relative">
                       <button
                         onClick={explainText}
-                        className="p-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        className="p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
                         title="Explique isso"
                       >
-                        <HelpCircle size={18} />
+                        <HelpCircle size={14} />
                       </button>
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                         Explique isso
@@ -1329,10 +1360,10 @@ Responda com base neste contexto.`;
                           setCopied(true);
                           setTimeout(() => setCopied(false), 2000);
                         }}
-                        className="p-2.5 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        className="p-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
                         title="Copiar"
                       >
-                        {copied ? <Check size={18} /> : <Copy size={18} />}
+                        {copied ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                       <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                         {copied ? 'Copiado!' : 'Copiar'}
@@ -1342,9 +1373,9 @@ Responda com base neste contexto.`;
                     {/* Botão: Fechar */}
                     <button
                       onClick={() => setSelectedText('')}
-                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 ml-2"
+                      className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 ml-1"
                     >
-                      <X size={18} className="text-gray-600 dark:text-gray-400" />
+                      <X size={14} className="text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
                 )}
