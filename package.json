@@ -12,9 +12,13 @@
   "dependencies": {
     "@tailwindcss/cli": "^4.1.17",
     "@tailwindcss/vite": "^4.1.17",
+    "crypto-js": "^4.2.0",
+    "firebase": "^12.5.0",
     "lucide-react": "^0.553.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-firebase-hooks": "^5.1.1",
+    "react-router-dom": "^7.9.5",
     "sonner": "^2.0.7"
   },
   "devDependencies": {
