@@ -36,7 +36,8 @@ const PDFStudyApp = () => {
   const [pageTextContent, setPageTextContent] = useState('');
   const [scrollMode, setScrollMode] = useState('page');
   const [pageMode, setPageMode] = useState('single');
-  
+  const [pdfViewMode, setPdfViewMode] = useState('compact'); // compact ou expanded
+
   // Estados de UI
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [leftSidebarTab, setLeftSidebarTab] = useState('thumbnails');
@@ -56,6 +57,8 @@ const PDFStudyApp = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [selectedTextInMessage, setSelectedTextInMessage] = useState(''); // texto selecionado que está no input
+  const [highlightedText, setHighlightedText] = useState(''); // para destaque visual
   const [copied, setCopied] = useState(false);
   
   // Estados de configuração LLM
@@ -414,11 +417,41 @@ const PDFStudyApp = () => {
     if (text) setSelectedText(text);
   };
 
+  const askAI = () => {
+    if (selectedText) {
+      setInput(selectedText);
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
+      setSelectedText('');
+    }
+  };
+
   const copyToChat = () => {
     if (selectedText) {
-      setInput(prev => prev + (prev ? '\n\n' : '') + `"${selectedText}"`);
+      setInput(selectedText);
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      setSelectedText('');
+    }
+  };
+
+  const translateText = () => {
+    if (selectedText) {
+      setInput(`Traduza este texto para português:\n\n"${selectedText}"`);
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
+      setSelectedText('');
+    }
+  };
+
+  const explainText = () => {
+    if (selectedText) {
+      setInput(`Explique este texto de forma clara e detalhada:\n\n"${selectedText}"`);
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
+      setSelectedText('');
     }
   };
 
@@ -1047,11 +1080,22 @@ Responda com base neste contexto.`;
                     <Bookmark size={20} fill={bookmarks.includes(currentPage) ? 'currentColor' : 'none'} />
                   </button>
                   <button
+                    onClick={() => setPdfViewMode(pdfViewMode === 'compact' ? 'expanded' : 'compact')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      pdfViewMode === 'expanded'
+                        ? 'bg-blue-600 text-white'
+                        : darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
+                    }`}
+                    title={pdfViewMode === 'compact' ? 'Expandir visualização' : 'Compactar visualização'}
+                  >
+                    {pdfViewMode === 'expanded' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  </button>
+                  <button
                     onClick={toggleFullscreen}
-                    className={`p-2.5 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
+                    className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
                     title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
                   >
-                    {fullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                    {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                   </button>
                 </div>
               </>
@@ -1190,7 +1234,7 @@ Responda com base neste contexto.`;
 
           {/* Área de Visualização */}
           <div
-            className={`flex-1 ${darkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-100 via-gray-50 to-blue-50/20'} p-8 overflow-auto transition-all duration-300 ${
+            className={`flex-1 ${darkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-100 via-gray-50 to-blue-50/20'} ${pdfViewMode === 'expanded' ? 'p-4' : 'p-8'} overflow-auto transition-all duration-300 ${
               draggingOverViewer
                 ? (darkMode ? 'bg-blue-900/40 border-4 border-blue-500 border-dashed' : 'bg-blue-100 border-4 border-blue-500 border-dashed')
                 : ''
@@ -1229,32 +1273,78 @@ Responda com base neste contexto.`;
                 </div>
                 
                 {selectedText && (
-                  <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white shadow-2xl rounded-2xl p-5 flex items-center gap-4 border-2 border-purple-300 z-30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex flex-col gap-2.5">
+                  <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-3 flex items-center gap-3 border-2 border-purple-300 dark:border-purple-600 z-30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {/* Botão: Pergunte a IA */}
+                    <div className="group relative">
                       <button
-                        onClick={copyToChat}
-                        className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        onClick={askAI}
+                        className="p-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Pergunte a IA"
                       >
-                        {copied ? <Check size={18} /> : <MessageSquare size={18} />}
-                        {copied ? 'Copiado!' : 'Enviar para Chat'}
+                        <MessageSquare size={18} />
                       </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Pergunte a IA
+                      </div>
+                    </div>
+
+                    {/* Botão: Traduzir */}
+                    <div className="group relative">
+                      <button
+                        onClick={translateText}
+                        className="p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Traduzir"
+                      >
+                        <svg size={18} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                          <path d="M5 8l6 6" />
+                          <path d="M4 14l10-10" />
+                          <path d="M20 4h-6m6 0v6" />
+                          <path d="M14 14l-4 4m0-6l4 4" />
+                        </svg>
+                      </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Traduzir
+                      </div>
+                    </div>
+
+                    {/* Botão: Explique isso */}
+                    <div className="group relative">
+                      <button
+                        onClick={explainText}
+                        className="p-2.5 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Explique isso"
+                      >
+                        <HelpCircle size={18} />
+                      </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Explique isso
+                      </div>
+                    </div>
+
+                    {/* Botão: Copiar */}
+                    <div className="group relative">
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(selectedText);
                           setCopied(true);
                           setTimeout(() => setCopied(false), 2000);
                         }}
-                        className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-500 text-white rounded-xl hover:from-gray-700 hover:to-gray-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        className="p-2.5 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Copiar"
                       >
-                        <Copy size={18} />
-                        Copiar Texto
+                        {copied ? <Check size={18} /> : <Copy size={18} />}
                       </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        {copied ? 'Copiado!' : 'Copiar'}
+                      </div>
                     </div>
+
+                    {/* Botão: Fechar */}
                     <button
                       onClick={() => setSelectedText('')}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 ml-2"
                     >
-                      <X size={20} />
+                      <X size={18} className="text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
                 )}
@@ -1560,7 +1650,7 @@ Responda com base neste contexto.`;
 
         {/* Painel do Chat */}
         {chatOpen && (
-          <div className={`w-96 ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
+          <div className={`w-[32rem] ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2.5 flex items-center justify-between border-b border-purple-700/50">
               <div className="flex items-center gap-2">
                 <MessageSquare size={20} />
@@ -1655,19 +1745,27 @@ Responda com base neste contexto.`;
                   )}
                 </div>
               ) : (
-                messages.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[85%] p-4 rounded-2xl shadow-md ${
-                        msg.role === 'user'
-                          ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white'
-                          : `${darkMode ? 'bg-gray-700 text-gray-100 border-2 border-gray-600' : 'bg-white text-gray-800 border-2 border-gray-200'}`
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                messages.map((msg, idx) => {
+                  const hasSelectedText = msg.role === 'user' && msg.content.includes(selectedTextInMessage);
+                  return (
+                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`max-w-[85%] p-4 rounded-2xl shadow-md transition-all ${
+                          msg.role === 'user'
+                            ? `bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white ${hasSelectedText ? 'ring-2 ring-yellow-300 ring-offset-2' : ''}`
+                            : `${darkMode ? 'bg-gray-700 text-gray-100 border-2 border-gray-600' : 'bg-white text-gray-800 border-2 border-gray-200'}`
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        {hasSelectedText && (
+                          <div className="mt-2 text-xs opacity-75 border-t border-current pt-2">
+                            📌 Contém texto selecionado
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               {loading && (
                 <div className="flex justify-start">
