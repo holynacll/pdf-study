@@ -910,7 +910,7 @@ Responda com base neste contexto.`;
         )}
 
         {/* Área Central */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Toolbar */}
           <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700' : 'bg-gradient-to-r from-white via-blue-50/30 to-purple-50/20 border-gray-200'} shadow-lg border-b px-3 py-2 flex items-center justify-between gap-2 flex-nowrap backdrop-blur-sm transition-colors duration-300 overflow-x-auto`}>
             <div className="flex items-center gap-2">
