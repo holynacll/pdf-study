@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, MessageSquare, Send, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Copy, Check, Settings, CheckCircle, XCircle, RotateCw, Search, Download, Printer, Menu, Home, FileText, Bookmark, Maximize2, Minimize2, BookOpen, File, LayoutGrid, HelpCircle } from 'lucide-react';
+import { Upload, MessageSquare, Send, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Copy, Check, Settings, CheckCircle, XCircle, RotateCw, Search, Printer, Menu, Home, FileText, Bookmark, Maximize2, Minimize2, BookOpen, File, HelpCircle } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 const PDFStudyApp = () => {
