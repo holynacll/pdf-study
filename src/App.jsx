@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, MessageSquare, Send, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Copy, Check, Settings, CheckCircle, XCircle, RotateCw, Search, Download, Printer, Menu, Home, FileText, Bookmark, Maximize2, Minimize2, BookOpen, File, LayoutGrid } from 'lucide-react';
+import { Upload, MessageSquare, Send, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Copy, Check, Settings, CheckCircle, XCircle, RotateCw, Search, Download, Printer, Menu, Home, FileText, Bookmark, Maximize2, Minimize2, BookOpen, File, LayoutGrid, HelpCircle } from 'lucide-react';
+import { Toaster, toast } from 'sonner';
 
 const PDFStudyApp = () => {
   // Refs primeiro
@@ -29,6 +30,12 @@ const PDFStudyApp = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('pdf-sage-dark-mode');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+  const [draggingOverViewer, setDraggingOverViewer] = useState(false);
   
   // Estados de chat e IA
   const [messages, setMessages] = useState([]);
@@ -138,27 +145,124 @@ const PDFStudyApp = () => {
       } else if (e.key === 'Escape') {
         setSearchOpen(false);
         setFullscreen(false);
+        setShowKeyboardShortcuts(false);
+      } else if (e.key === '?' || e.key === 'F1') {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        if (pdfDoc) toggleBookmark();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [totalPages]);
+  }, [totalPages, pdfDoc]);
+
+  // Persistir tema escuro no localStorage
+  useEffect(() => {
+    localStorage.setItem('pdf-sage-dark-mode', JSON.stringify(darkMode));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (file && file.type === 'application/pdf') {
+      try {
+        toast.loading('Carregando PDF...', { id: 'pdf-loading' });
+        const fileReader = new FileReader();
+        fileReader.onload = async (event) => {
+          try {
+            const typedArray = new Uint8Array(event.target.result);
+            const pdf = await window.pdfjsLib.getDocument(typedArray).promise;
+            setPdfDoc(pdf);
+            setTotalPages(pdf.numPages);
+            setCurrentPage(1);
+            setPageInput('1');
+            setPdfFile(file.name);
+            await generateThumbnails(pdf);
+            toast.dismiss('pdf-loading');
+            toast.success(`PDF "${file.name}" carregado com sucesso!`, { duration: 3 });
+          } catch (error) {
+            toast.dismiss('pdf-loading');
+            toast.error('Erro ao carregar PDF. Tente outro arquivo.', { duration: 4 });
+            console.error('Erro ao processar PDF:', error);
+          }
+        };
+        fileReader.onerror = () => {
+          toast.dismiss('pdf-loading');
+          toast.error('Erro ao ler arquivo', { duration: 4 });
+        };
+        fileReader.readAsArrayBuffer(file);
+      } catch (error) {
+        toast.error('Erro ao processar arquivo', { duration: 4 });
+      }
+    } else {
+      toast.error('Por favor, selecione um arquivo PDF válido', { duration: 3 });
+    }
+  };
+
+  // Handler para drag & drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingOverViewer(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingOverViewer(false);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDraggingOverViewer(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) {
+      toast.error('Nenhum arquivo selecionado', { duration: 3 });
+      return;
+    }
+
+    const file = files[0];
+    if (file.type !== 'application/pdf') {
+      toast.error('Apenas arquivos PDF são permitidos', { duration: 3 });
+      return;
+    }
+
+    try {
+      toast.loading('Carregando PDF...', { id: 'pdf-loading' });
       const fileReader = new FileReader();
       fileReader.onload = async (event) => {
-        const typedArray = new Uint8Array(event.target.result);
-        const pdf = await window.pdfjsLib.getDocument(typedArray).promise;
-        setPdfDoc(pdf);
-        setTotalPages(pdf.numPages);
-        setCurrentPage(1);
-        setPageInput('1');
-        setPdfFile(file.name);
-        generateThumbnails(pdf);
+        try {
+          const typedArray = new Uint8Array(event.target.result);
+          const pdf = await window.pdfjsLib.getDocument(typedArray).promise;
+          setPdfDoc(pdf);
+          setTotalPages(pdf.numPages);
+          setCurrentPage(1);
+          setPageInput('1');
+          setPdfFile(file.name);
+          await generateThumbnails(pdf);
+          toast.dismiss('pdf-loading');
+          toast.success(`PDF "${file.name}" carregado com sucesso!`, { duration: 3 });
+        } catch (error) {
+          toast.dismiss('pdf-loading');
+          toast.error('Erro ao carregar PDF. Tente outro arquivo.', { duration: 4 });
+          console.error('Erro ao processar PDF:', error);
+        }
+      };
+      fileReader.onerror = () => {
+        toast.dismiss('pdf-loading');
+        toast.error('Erro ao ler arquivo', { duration: 4 });
       };
       fileReader.readAsArrayBuffer(file);
+    } catch (error) {
+      toast.error('Erro ao processar arquivo', { duration: 4 });
     }
   };
 
@@ -258,10 +362,12 @@ const PDFStudyApp = () => {
   const validateApiKey = async () => {
     if (!apiKey.trim()) {
       setApiKeyValid(false);
+      toast.error('Por favor, insira uma API Key', { duration: 3 });
       return;
     }
     setValidating(true);
     setApiKeyValid(null);
+    toast.loading('Validando API Key...', { id: 'api-validate' });
     try {
       let isValid = false;
       if (llmProvider === 'anthropic') {
@@ -289,9 +395,17 @@ const PDFStudyApp = () => {
         isValid = response.ok && data.models && Array.isArray(data.models);
       }
       setApiKeyValid(isValid);
+      toast.dismiss('api-validate');
+      if (isValid) {
+        toast.success('API Key validada com sucesso!', { duration: 3 });
+      } else {
+        toast.error('API Key inválida. Verifique e tente novamente.', { duration: 4 });
+      }
     } catch (error) {
       console.error('Erro ao validar API key:', error);
       setApiKeyValid(false);
+      toast.dismiss('api-validate');
+      toast.error('Erro ao validar API Key. Verifique sua conexão.', { duration: 4 });
     } finally {
       setValidating(false);
     }
@@ -300,7 +414,7 @@ const PDFStudyApp = () => {
   const sendMessage = async () => {
     if (!input.trim() || !apiKey.trim()) {
       if (!apiKey.trim()) {
-        alert('Por favor, configure sua API Key nas configurações');
+        toast.error('Por favor, configure sua API Key nas configurações', { duration: 4 });
         setSettingsOpen(true);
       }
       return;
@@ -315,11 +429,12 @@ Conteúdo da página atual:
 ${pageTextContent.substring(0, 3000)}${pageTextContent.length > 3000 ? '...' : ''}
 
 Responda com base neste contexto.`;
-    
+
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
+    toast.loading('Enviando mensagem...', { id: 'send-msg' });
 
     try {
       let assistantContent = '';
@@ -384,12 +499,16 @@ Responda com base neste contexto.`;
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+      toast.dismiss('send-msg');
+      toast.success('Resposta recebida!', { duration: 2 });
     } catch (error) {
       console.error('Erro:', error);
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: `Erro: ${error.message}`
       }]);
+      toast.dismiss('send-msg');
+      toast.error(`Erro ao processar: ${error.message}`, { duration: 4 });
     } finally {
       setLoading(false);
       setSelectedText('');
@@ -400,55 +519,65 @@ Responda com base neste contexto.`;
     const exists = bookmarks.includes(currentPage);
     if (exists) {
       setBookmarks(bookmarks.filter(p => p !== currentPage));
+      toast.success(`Marcador removido da página ${currentPage}`, { duration: 2 });
     } else {
       setBookmarks([...bookmarks, currentPage].sort((a, b) => a - b));
+      toast.success(`Marcador adicionado na página ${currentPage}`, { duration: 2 });
     }
   };
 
   const performSearch = async () => {
     if (!searchQuery.trim() || !pdfDoc) return;
-    
+
     setSearching(true);
     setSearchResults([]);
     setCurrentSearchIndex(0);
-    
+    toast.loading('Buscando no documento...', { id: 'search' });
+
     const results = [];
     const queryLower = searchQuery.toLowerCase();
-    
+
     try {
       for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
         const page = await pdfDoc.getPage(pageNum);
         const textContent = await page.getTextContent();
         const pageText = textContent.items.map(item => item.str).join(' ');
-        
+
         // Buscar todas as ocorrências na página
         const pageLower = pageText.toLowerCase();
         let index = pageLower.indexOf(queryLower);
-        
+
         while (index !== -1) {
           // Extrair contexto ao redor da ocorrência
           const start = Math.max(0, index - 50);
           const end = Math.min(pageText.length, index + queryLower.length + 50);
           const snippet = pageText.substring(start, end);
-          
+
           results.push({
             pageNum,
             index,
             snippet: (start > 0 ? '...' : '') + snippet + (end < pageText.length ? '...' : '')
           });
-          
+
           index = pageLower.indexOf(queryLower, index + 1);
         }
       }
-      
+
       setSearchResults(results);
-      
+
       if (results.length > 0) {
         // Ir para a primeira ocorrência
         setCurrentPage(results[0].pageNum);
+        toast.dismiss('search');
+        toast.success(`${results.length} resultado${results.length > 1 ? 's' : ''} encontrado${results.length > 1 ? 's' : ''}`, { duration: 3 });
+      } else {
+        toast.dismiss('search');
+        toast.info(`Nenhum resultado encontrado para "${searchQuery}"`, { duration: 3 });
       }
     } catch (error) {
       console.error('Erro ao buscar:', error);
+      toast.dismiss('search');
+      toast.error('Erro ao realizar busca', { duration: 3 });
     } finally {
       setSearching(false);
     }
@@ -473,6 +602,7 @@ Responda com base neste contexto.`;
 
   return (
     <>
+      <Toaster position="bottom-right" expand={true} />
       <style>{`
         .textLayer {
           position: absolute;
@@ -495,7 +625,7 @@ Responda com base neste contexto.`;
           background: rgba(0, 0, 255, 0.3);
         }
       `}</style>
-      <div className={`flex h-screen bg-gray-50 ${fullscreen ? 'fixed inset-0 z-50' : ''}`} ref={containerRef}>
+      <div className={`flex h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'} ${fullscreen ? 'fixed inset-0 z-50' : ''}`} ref={containerRef}>
         {/* Sidebar Esquerda */}
         {leftSidebarOpen && (
           <div className="w-64 bg-white border-r flex flex-col">
@@ -687,6 +817,20 @@ Responda com base neste contexto.`;
 
             <div className="flex items-center gap-2 border-l pl-2">
               <button
+                onClick={() => setShowKeyboardShortcuts(true)}
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Atalhos de teclado (? ou F1)"
+              >
+                <HelpCircle size={20} />
+              </button>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                title={`Modo ${darkMode ? 'claro' : 'escuro'}`}
+              >
+                {darkMode ? '☀️' : '🌙'}
+              </button>
+              <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
                 className="flex items-center gap-2 px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
               >
@@ -778,7 +922,12 @@ Responda com base neste contexto.`;
           )}
 
           {/* Área de Visualização */}
-          <div className="flex-1 bg-gray-200 p-8 overflow-auto">
+          <div
+            className={`flex-1 ${darkMode ? 'bg-gray-800' : 'bg-gray-200'} p-8 overflow-auto transition-colors duration-200 ${draggingOverViewer ? (darkMode ? 'bg-blue-900/30 border-2 border-blue-500' : 'bg-blue-100 border-2 border-blue-400') : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
             {!pdfDoc ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <Upload size={64} className="mb-4" />
@@ -972,9 +1121,123 @@ Responda com base neste contexto.`;
           </div>
         )}
 
+        {/* Modal de Atalhos de Teclado */}
+        {showKeyboardShortcuts && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} rounded-lg shadow-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto`}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <HelpCircle size={24} />
+                  Atalhos de Teclado
+                </h2>
+                <button onClick={() => setShowKeyboardShortcuts(false)} className={`p-2 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Navegação */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    📄 Navegação
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Próxima página</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>→</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Página anterior</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>←</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Primeira página</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Home</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Última página</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>End</kbd>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Zoom */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    🔍 Zoom
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Aumentar zoom</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Ctrl +</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Diminuir zoom</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Ctrl -</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Zoom padrão (150%)</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Ctrl 0</kbd>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Busca e Ferramentas */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    🔎 Busca e Ferramentas
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Abrir busca</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Ctrl F</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Abrir chat IA</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Ctrl K</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Adicionar/remover marcador</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Ctrl B</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Girar página</span>
+                      <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Clique no botão 🔄</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Geral */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                    ⚙️ Geral
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Sair da busca / Sair de tela cheia</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>Esc</kbd>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Mostrar este painel</span>
+                      <kbd className={`px-2 py-1 rounded font-mono text-xs ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>? ou F1</kbd>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowKeyboardShortcuts(false)}
+                className="w-full mt-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Painel do Chat */}
         {chatOpen && (
-          <div className="w-96 bg-white shadow-2xl flex flex-col border-l">
+          <div className={`w-96 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white'} shadow-2xl flex flex-col border-l`}>
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare size={24} />
