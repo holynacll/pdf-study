@@ -527,6 +527,8 @@ const PDFStudyApp = () => {
     if (messages.length === 0) return;
     if (window.confirm('Tem certeza que deseja limpar todas as mensagens?')) {
       setMessages([]);
+      setSelectedTextInMessage('');
+      setInput('');
       toast.success('Chat limpo!', { duration: 2 });
     }
   };
@@ -1695,32 +1697,6 @@ Responda com base neste contexto.`;
               </button>
             </div>
 
-            {messages.length === 0 && pdfDoc && (
-              <div className={`p-5 border-b ${darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-gray-200'}`}>
-                <p className={`text-sm font-bold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Sugestões rápidas:</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setInput('Resuma esta página')}
-                    className="text-sm px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 font-semibold shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  >
-                    📝 Resumir página
-                  </button>
-                  <button
-                    onClick={() => setInput('Explique os conceitos principais desta página')}
-                    className="text-sm px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 font-semibold shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  >
-                    💡 Explicar conceitos
-                  </button>
-                  <button
-                    onClick={() => setInput('Crie perguntas de estudo sobre este conteúdo')}
-                    className="text-sm px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-xl hover:from-green-700 hover:to-green-600 font-semibold shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  >
-                    ❓ Criar quiz
-                  </button>
-                </div>
-              </div>
-            )}
-
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {messages.length === 0 ? (
                 <div className={`text-center mt-12 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -1730,7 +1706,7 @@ Responda com base neste contexto.`;
                   <p className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Comece uma conversa!
                   </p>
-                  <p className="text-sm mt-2">Selecione texto no PDF ou use as sugestões acima</p>
+                  <p className="text-sm mt-2">Selecione texto no PDF ou escreva sua pergunta</p>
                   {!apiKey && (
                     <button
                       onClick={() => setSettingsOpen(true)}
@@ -1779,12 +1755,15 @@ Responda com base neste contexto.`;
             </div>
 
             <div className={`p-5 border-t-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-blue-50/30 border-gray-200'} shadow-lg`}>
-              {pdfFile && (
-                <div className={`text-xs mb-3 flex items-center gap-2 font-medium px-3 py-2 rounded-lg ${
-                  darkMode ? 'text-gray-400 bg-gray-700/50' : 'text-gray-600 bg-white/70'
+              {selectedTextInMessage && (
+                <div className={`text-xs mb-3 flex items-center gap-2 font-medium px-3 py-2 rounded-lg border-l-4 ${
+                  darkMode
+                    ? 'text-blue-300 bg-blue-900/30 border-blue-600'
+                    : 'text-blue-700 bg-blue-100 border-blue-400'
                 }`}>
-                  <FileText size={14} />
-                  Página {currentPage} de {totalPages} - {pdfFile}
+                  <span className="flex-1 truncate" title={selectedTextInMessage}>
+                    💬 {selectedTextInMessage}
+                  </span>
                 </div>
               )}
               <div className="flex gap-3">
