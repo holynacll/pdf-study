@@ -493,7 +493,13 @@ Responda com base neste contexto.`;
         });
         const data = await response.json();
         if (response.ok) {
-          assistantContent = data.content[0].text;
+          if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
+            throw new Error('Resposta vazia da API Anthropic');
+          }
+          assistantContent = data.content[0]?.text;
+          if (!assistantContent) {
+            throw new Error('Formato de resposta inválido do Anthropic');
+          }
         } else {
           throw new Error(data.error?.message || 'Erro ao processar');
         }
@@ -509,7 +515,13 @@ Responda com base neste contexto.`;
         });
         const data = await response.json();
         if (response.ok) {
-          assistantContent = data.choices[0].message.content;
+          if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+            throw new Error('Resposta vazia da API OpenAI');
+          }
+          assistantContent = data.choices[0]?.message?.content;
+          if (!assistantContent) {
+            throw new Error('Formato de resposta inválido do OpenAI');
+          }
         } else {
           throw new Error(data.error?.message || 'Erro ao processar');
         }
@@ -534,7 +546,17 @@ Responda com base neste contexto.`;
         );
         const data = await response.json();
         if (response.ok) {
-          assistantContent = data.candidates[0].content.parts[0].text;
+          if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+            throw new Error('Resposta vazia da API Google Gemini');
+          }
+          const candidate = data.candidates[0];
+          if (!candidate?.content?.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
+            throw new Error('Formato de resposta inválido do Google Gemini');
+          }
+          assistantContent = candidate.content.parts[0]?.text;
+          if (!assistantContent) {
+            throw new Error('Texto não encontrado na resposta do Google Gemini');
+          }
         } else {
           throw new Error(data.error?.message || 'Erro ao processar');
         }
