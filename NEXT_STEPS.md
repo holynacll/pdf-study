@@ -8,7 +8,98 @@ O **PDF Sage** já possui uma base sólida com funcionalidades essenciais implem
 
 ## 🚀 Início Rápido - O que fazer agora?
 
-### **Opção 1: Melhorias Rápidas de UX (1-3 dias)**
+### **⚠️ PRIORIDADE CRÍTICA: FASE 0 - Firebase & Correção de Bugs** ⚠️
+
+**COMEÇAR IMEDIATAMENTE** com esta fase antes de qualquer outra implementação!
+
+#### **Parte 1: Correção de Ícones (4-6 horas)**
+
+**Problema identificado:** Ícones do lucide-react não renderizam corretamente
+
+**Passos:**
+
+1. **Verificar instalação:**
+   ```bash
+   npm list lucide-react
+   # Se não estiver instalado ou versão incorreta:
+   npm install lucide-react@latest
+   ```
+
+2. **Verificar importação em App.jsx:**
+   - Todos os ícones devem ser importados individualmente
+   - Verificar se não há typos nos nomes
+   - Exemplo correto: `import { Upload, MessageSquare } from 'lucide-react';`
+
+3. **Testar renderização:**
+   ```bash
+   npm run dev
+   ```
+   - Abrir console do navegador (F12)
+   - Verificar erros relacionados a ícones
+   - Testar cada funcionalidade visualmente
+
+4. **Checklist de ícones para verificar:**
+   - [ ] Botão Upload
+   - [ ] Ícones da toolbar (Zoom, Rotate, Search, etc.)
+   - [ ] Ícones do chat
+   - [ ] Ícones de configurações
+   - [ ] Ícones da sidebar
+   - [ ] Ícones de navegação
+
+**Estimativa:** 4-6 horas
+
+---
+
+#### **Parte 2: Firebase & Autenticação (2-3 dias)**
+
+**Documentação completa:** Leia `FIREBASE_SETUP.md`
+
+**Fluxo de implementação:**
+
+**Dia 1: Setup Firebase e Autenticação**
+1. Criar projeto Firebase (30min)
+2. Configurar Authentication com Google (30min)
+3. Habilitar Firestore (15min)
+4. Instalar dependências (10min)
+   ```bash
+   npm install firebase react-firebase-hooks react-router-dom crypto-js
+   ```
+5. Criar `.env.local` com credenciais (15min)
+6. Implementar `src/config/firebase.js` (30min)
+7. Criar `AuthContext.jsx` (1-2h)
+8. Criar página de `Login.jsx` (1-2h)
+9. Criar `PrivateRoute.jsx` (30min)
+10. Atualizar `main.jsx` com Router (30min)
+
+**Dia 2: Firestore e Migração**
+1. Criar `firestore.service.js` (2-3h)
+2. Migrar API Keys para Firestore (1-2h)
+3. Migrar marcadores para Firestore (1h)
+4. Migrar conversas para Firestore (1h)
+5. Remover localStorage de dados sensíveis (1h)
+
+**Dia 3: Regras de Segurança e Testes**
+1. Configurar regras Firestore (30min)
+2. Testar fluxo de autenticação (1h)
+3. Testar persistência de dados (1h)
+4. Testar regras de segurança (1h)
+5. Correção de bugs (1-2h)
+
+**Estimativa total:** 2-3 dias
+
+**Critérios de aceitação:**
+- ✅ Login com Google funciona
+- ✅ Apenas usuários autenticados acessam /app
+- ✅ API Keys nunca aparecem no localStorage
+- ✅ Dados persistem no Firestore
+- ✅ Regras de segurança impedem acesso não autorizado
+- ✅ Todos os ícones renderizam corretamente
+
+**Impacto:** CRÍTICO | **Esforço:** Médio-Alto | **Tempo total:** 3-5 dias
+
+---
+
+### **Opção 1: Melhorias Rápidas de UX (APÓS FASE 0)**
 
 Implementações de alto impacto e baixo esforço:
 

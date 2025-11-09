@@ -27,6 +27,147 @@ Plataforma web para leitura e compreensão inteligente de documentos PDF, oferec
 
 ## 🚀 Fases de Desenvolvimento
 
+### **⚠️ FASE 0: Correção de Bugs e Infraestrutura Base** 🔧
+> Prazo estimado: 3-5 dias | **PRIORIDADE CRÍTICA**
+
+#### 0.1 Correção de Ícones e Elementos Visuais
+- [ ] Verificar importação correta do lucide-react
+- [ ] Testar renderização de todos os ícones na interface
+- [ ] Corrigir ícones que não aparecem ou aparecem quebrados
+- [ ] Validar que todos os componentes visuais estão renderizando
+- [ ] Verificar console do navegador para erros
+- [ ] Testar em diferentes navegadores (Chrome, Firefox, Safari)
+- [ ] Documentar ícones problemáticos e soluções aplicadas
+
+#### 0.2 Autenticação com Firebase (Google) 🔐
+- [ ] Criar projeto no Firebase Console
+- [ ] Configurar Firebase Authentication
+- [ ] Habilitar provedor Google Sign-In
+- [ ] Instalar dependências: `firebase`, `react-firebase-hooks`
+- [ ] Criar arquivo de configuração `src/config/firebase.js`
+- [ ] Criar variáveis de ambiente (.env) para credenciais Firebase
+- [ ] Implementar contexto de autenticação (`src/contexts/AuthContext.jsx`)
+- [ ] Criar página de login (`src/pages/Login.jsx`)
+- [ ] Implementar botão "Entrar com Google"
+- [ ] Criar fluxo de logout
+- [ ] Implementar Protected Routes (só autenticados acessam app)
+- [ ] Adicionar loading state durante autenticação
+
+#### 0.3 Configuração do Firestore 💾
+- [ ] Habilitar Firestore Database no Firebase Console
+- [ ] Definir regras de segurança do Firestore
+- [ ] Criar coleções: `users`, `api_keys`, `documents`, `conversations`
+- [ ] Estruturar schema de dados
+- [ ] Implementar serviço de database (`src/services/firestore.service.js`)
+- [ ] Criar funções CRUD para cada coleção
+
+#### 0.4 Migração de LocalStorage para Firestore
+- [ ] Remover armazenamento de API Keys do localStorage
+- [ ] Implementar salvamento seguro de API Keys no Firestore
+- [ ] Migrar configurações de LLM para Firestore
+- [ ] Migrar marcadores para Firestore (por usuário + documento)
+- [ ] Migrar histórico de conversas para Firestore
+- [ ] Migrar documentos recentes para Firestore
+- [ ] Implementar sincronização em tempo real (onSnapshot)
+- [ ] Manter apenas preferências visuais em localStorage (tema, zoom)
+
+#### 0.5 Roteamento
+- [ ] Instalar React Router: `npm install react-router-dom`
+- [ ] Configurar rotas principais: `/login`, `/app`
+- [ ] Implementar PrivateRoute component
+- [ ] Redirecionar usuários não autenticados para /login
+- [ ] Redirecionar usuários autenticados para /app
+
+**Estrutura de Dados Firestore:**
+```javascript
+// Coleção: users
+{
+  uid: "user-firebase-uid",
+  email: "user@example.com",
+  displayName: "Nome do Usuário",
+  photoURL: "https://...",
+  createdAt: Timestamp,
+  lastLogin: Timestamp,
+  preferences: {
+    theme: "dark",
+    defaultZoom: 1.5,
+    defaultLLM: "anthropic"
+  }
+}
+
+// Coleção: api_keys
+{
+  userId: "user-firebase-uid",
+  provider: "anthropic",
+  apiKey: "encrypted-key", // Considerar encriptação
+  modelName: "claude-sonnet-4",
+  isValid: true,
+  lastValidated: Timestamp,
+  createdAt: Timestamp
+}
+
+// Coleção: documents
+{
+  userId: "user-firebase-uid",
+  documentId: "hash-do-pdf",
+  fileName: "documento.pdf",
+  fileSize: 1234567,
+  lastPage: 42,
+  lastAccess: Timestamp,
+  bookmarks: [1, 10, 25, 42],
+  createdAt: Timestamp
+}
+
+// Coleção: conversations
+{
+  userId: "user-firebase-uid",
+  documentId: "hash-do-pdf",
+  messages: [
+    { role: "user", content: "...", timestamp: Timestamp },
+    { role: "assistant", content: "...", timestamp: Timestamp }
+  ],
+  createdAt: Timestamp,
+  updatedAt: Timestamp
+}
+```
+
+**Regras de Segurança Firestore:**
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Usuários só podem ler/escrever seus próprios dados
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /api_keys/{keyId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    match /documents/{docId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    match /conversations/{convId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+  }
+}
+```
+
+**Métricas de Sucesso:**
+- ✅ Login com Google funciona perfeitamente
+- ✅ API Keys nunca aparecem no localStorage
+- ✅ Dados sincronizam em tempo real
+- ✅ Apenas usuários autenticados acessam o app
+- ✅ Regras de segurança impedem acesso não autorizado
+- ✅ Todos os ícones renderizam corretamente
+
+**Esforço Estimado**: 3-5 dias
+
+---
+
 ### **FASE 1: Melhorias de UX/UI e Usabilidade** 🎨
 > Prazo estimado: 1-2 semanas
 
@@ -368,10 +509,17 @@ Plataforma web para leitura e compreensão inteligente de documentos PDF, oferec
 
 ## 🎯 Priorização Sugerida
 
+### **Prioridade CRÍTICA (Infraestrutura e Segurança)**
+1. ⚠️ **FASE 0: Correção de Bugs e Infraestrutura Base** - COMEÇAR IMEDIATAMENTE
+   - 0.1: Correção de Ícones (1 dia)
+   - 0.2: Autenticação Firebase (1-2 dias)
+   - 0.3: Firestore Setup (1 dia)
+   - 0.4: Migração para Firestore (1-2 dias)
+   - 0.5: Roteamento (meio dia)
+
 ### **Prioridade ALTA (MVP Aprimorado)**
-1. ✅ FASE 1: Melhorias de UX/UI e Usabilidade
-2. ✅ FASE 2: Sistema de Tradução Aprimorado
-3. ✅ FASE 3: Persistência de Dados e Estado
+2. ✅ FASE 1: Melhorias de UX/UI e Usabilidade
+3. ✅ FASE 2: Sistema de Tradução Aprimorado
 4. ✅ FASE 8: Tratamento de Erros e Resiliência
 
 ### **Prioridade MÉDIA (Funcionalidades Valiosas)**
@@ -439,11 +587,14 @@ Plataforma web para leitura e compreensão inteligente de documentos PDF, oferec
 ## 📝 Notas Importantes
 
 ### Considerações de Segurança
-- ⚠️ API Keys armazenadas no localStorage (considerar backend seguro no futuro)
+- ✅ **API Keys armazenadas no Firestore (não mais localStorage)** - FASE 0 implementada
+- ✅ **Autenticação via Firebase/Google** - acesso controlado
+- ✅ **Regras de segurança Firestore** - dados isolados por usuário
 - ⚠️ Validação de PDFs para prevenir malware
 - ⚠️ Sanitização de inputs do usuário
 - ⚠️ Rate limiting para chamadas de API
 - ⚠️ CSP (Content Security Policy)
+- 🔐 Considerar encriptação de API Keys no Firestore (crypto-js)
 
 ### Considerações de Privacidade
 - 🔒 PDFs processados apenas no cliente
