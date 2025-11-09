@@ -38,7 +38,7 @@ const PDFStudyApp = () => {
   const [pageMode, setPageMode] = useState('single');
   
   // Estados de UI
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [leftSidebarTab, setLeftSidebarTab] = useState('thumbnails');
   const [chatOpen, setChatOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -50,7 +50,7 @@ const PDFStudyApp = () => {
     return saved !== null ? JSON.parse(saved) : false;
   });
   const [draggingOverViewer, setDraggingOverViewer] = useState(false);
-  
+
   // Estados de chat e IA
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -200,6 +200,36 @@ const PDFStudyApp = () => {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Função para toggle fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      // Entrar em fullscreen
+      containerRef.current?.requestFullscreen()
+        .then(() => setFullscreen(true))
+        .catch(err => {
+          console.error('Erro ao entrar em fullscreen:', err);
+          toast.error('Não foi possível ativar tela cheia', { duration: 2 });
+        });
+    } else {
+      // Sair de fullscreen
+      document.exitFullscreen()
+        .then(() => setFullscreen(false))
+        .catch(err => {
+          console.error('Erro ao sair de fullscreen:', err);
+        });
+    }
+  };
+
+  // Listener para quando usuário sai do fullscreen com ESC
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -450,6 +480,14 @@ const PDFStudyApp = () => {
       toast.error('Erro ao validar API Key. Verifique sua conexão.', { duration: 4 });
     } finally {
       setValidating(false);
+    }
+  };
+  
+  const clearChat = () => {
+    if (messages.length === 0) return;
+    if (window.confirm('Tem certeza que deseja limpar todas as mensagens?')) {
+      setMessages([]);
+      toast.success('Chat limpo!', { duration: 2 });
     }
   };
 
@@ -753,7 +791,7 @@ Responda com base neste contexto.`;
       <div className={`flex h-screen ${darkMode ? 'dark bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20'} ${fullscreen ? 'fixed inset-0 z-50' : ''} transition-colors duration-300`} ref={containerRef}>
         {/* Sidebar Esquerda */}
         {leftSidebarOpen && (
-          <div className={`w-72 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col shadow-xl transition-colors duration-300`}>
+          <div className={`w-64 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-r flex flex-col shadow-xl transition-colors duration-300`}>
             <div className={`flex ${darkMode ? 'border-gray-700' : 'border-gray-200'} border-b`}>
               <button
                 onClick={() => setLeftSidebarTab('thumbnails')}
@@ -834,7 +872,7 @@ Responda com base neste contexto.`;
         {/* Área Central */}
         <div className="flex-1 flex flex-col">
           {/* Toolbar */}
-          <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700' : 'bg-gradient-to-r from-white via-blue-50/30 to-purple-50/20 border-gray-200'} shadow-lg border-b px-5 py-3 flex items-center justify-between gap-4 flex-wrap backdrop-blur-sm transition-colors duration-300`}>
+          <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700' : 'bg-gradient-to-r from-white via-blue-50/30 to-purple-50/20 border-gray-200'} shadow-lg border-b px-4 py-2.5 flex items-center justify-between gap-4 flex-wrap backdrop-blur-sm transition-colors duration-300`}>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
@@ -1009,7 +1047,7 @@ Responda com base neste contexto.`;
                     <Bookmark size={20} fill={bookmarks.includes(currentPage) ? 'currentColor' : 'none'} />
                   </button>
                   <button
-                    onClick={() => setFullscreen(!fullscreen)}
+                    onClick={toggleFullscreen}
                     className={`p-2.5 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
                     title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
                   >
@@ -1228,7 +1266,7 @@ Responda com base neste contexto.`;
           </div>
 
           {pdfDoc && (
-            <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700 text-gray-300' : 'bg-gradient-to-r from-white via-blue-50/20 to-purple-50/10 border-gray-200 text-gray-700'} border-t px-5 py-3 text-sm font-medium flex items-center justify-between shadow-lg backdrop-blur-sm transition-colors duration-300`}>
+            <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700 text-gray-300' : 'bg-gradient-to-r from-white via-blue-50/20 to-purple-50/10 border-gray-200 text-gray-700'} border-t px-4 py-2.5 text-sm font-medium flex items-center justify-between shadow-lg backdrop-blur-sm transition-colors duration-300`}>
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-2 font-semibold">
                   <File size={16} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
@@ -1525,7 +1563,7 @@ Responda com base neste contexto.`;
 
         {/* Painel do Chat */}
         {chatOpen && (
-          <div className={`w-[28rem] ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
+          <div className={`w-96 ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
             <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white p-5 flex items-center justify-between shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
@@ -1542,6 +1580,53 @@ Responda com base neste contexto.`;
               >
                 <X size={22} />
               </button>
+            </div>
+
+            {/* Controles do Chat - Modelo e Limpar */}
+            <div className={`p-4 border-b flex items-center gap-3 ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+            }`}>
+              {/* Select de Modelo */}
+              <div className="flex-1">
+                <label className={`block text-xs font-semibold mb-1.5 ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Modelo IA
+                </label>
+                <select
+                  value={modelName}
+                  onChange={(e) => setModelName(e.target.value)}
+                  className={`w-full px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                >
+                  {llmProviders[llmProvider].models.map((model) => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botão Limpar Chat */}
+              <div className="flex flex-col">
+                <label className="block text-xs font-semibold mb-1.5 opacity-0 select-none">.</label>
+                <button
+                  onClick={clearChat}
+                  disabled={messages.length === 0}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
+                    messages.length === 0
+                      ? 'opacity-40 cursor-not-allowed bg-gray-200 text-gray-500'
+                      : darkMode
+                        ? 'bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-800 hover:border-red-700'
+                        : 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 hover:border-red-300'
+                  }`}
+                  title="Limpar todas as mensagens"
+                >
+                  <X size={16} />
+                  Limpar
+                </button>
+              </div>
             </div>
 
             {messages.length === 0 && pdfDoc && (
@@ -1647,7 +1732,7 @@ Responda com base neste contexto.`;
                 <button
                   onClick={sendMessage}
                   disabled={!input.trim() || loading || !apiKey}
-                  className="px-5 py-3 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:via-purple-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className="px-4 py-2.5 bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:via-purple-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                   title="Enviar mensagem"
                 >
                   <Send size={22} />
