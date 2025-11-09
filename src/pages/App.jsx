@@ -36,7 +36,6 @@ const PDFStudyApp = () => {
   const [pageTextContent, setPageTextContent] = useState('');
   const [scrollMode, setScrollMode] = useState('page');
   const [pageMode, setPageMode] = useState('single');
-  const [pdfViewMode, setPdfViewMode] = useState('compact'); // compact ou expanded
 
   // Estados de UI
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
@@ -424,10 +423,6 @@ const PDFStudyApp = () => {
       setHighlightedText(selectedText);
       setSelectedText('');
       setChatOpen(true);
-      // Se estiver em modo expandido, volta para compacto
-      if (pdfViewMode === 'expanded') {
-        setPdfViewMode('compact');
-      }
       toast.success('Pergunta adicionada ao chat! 💬', { duration: 2 });
     }
   };
@@ -441,10 +436,6 @@ const PDFStudyApp = () => {
       setTimeout(() => setCopied(false), 2000);
       setSelectedText('');
       setChatOpen(true);
-      // Se estiver em modo expandido, volta para compacto
-      if (pdfViewMode === 'expanded') {
-        setPdfViewMode('compact');
-      }
       toast.success('Texto adicionado ao chat! ✓', { duration: 2 });
     }
   };
@@ -456,10 +447,6 @@ const PDFStudyApp = () => {
       setHighlightedText(selectedText);
       setSelectedText('');
       setChatOpen(true);
-      // Se estiver em modo expandido, volta para compacto
-      if (pdfViewMode === 'expanded') {
-        setPdfViewMode('compact');
-      }
       toast.success('Tradução solicitada! 🌐', { duration: 2 });
     }
   };
@@ -471,10 +458,6 @@ const PDFStudyApp = () => {
       setHighlightedText(selectedText);
       setSelectedText('');
       setChatOpen(true);
-      // Se estiver em modo expandido, volta para compacto
-      if (pdfViewMode === 'expanded') {
-        setPdfViewMode('compact');
-      }
       toast.success('Explicação solicitada! 💡', { duration: 2 });
     }
   };
@@ -1104,24 +1087,6 @@ Responda com base neste contexto.`;
                     <Bookmark size={20} fill={bookmarks.includes(currentPage) ? 'currentColor' : 'none'} />
                   </button>
                   <button
-                    onClick={() => {
-                      const newMode = pdfViewMode === 'compact' ? 'expanded' : 'compact';
-                      setPdfViewMode(newMode);
-                      // Fechar chat quando expandir PDF
-                      if (newMode === 'expanded') {
-                        setChatOpen(false);
-                      }
-                    }}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      pdfViewMode === 'expanded'
-                        ? 'bg-blue-600 text-white'
-                        : darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'
-                    }`}
-                    title={pdfViewMode === 'compact' ? 'Expandir horizontalmente' : 'Compactar'}
-                  >
-                    {pdfViewMode === 'expanded' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-                  </button>
-                  <button
                     onClick={toggleFullscreen}
                     className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
                     title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
@@ -1265,7 +1230,7 @@ Responda com base neste contexto.`;
 
           {/* Área de Visualização */}
           <div
-            className={`flex-1 ${darkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-100 via-gray-50 to-blue-50/20'} ${pdfViewMode === 'expanded' ? 'p-4' : 'p-8'} overflow-auto transition-all duration-300 ${
+            className={`flex-1 ${darkMode ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' : 'bg-gradient-to-br from-gray-100 via-gray-50 to-blue-50/20'} p-8 overflow-auto transition-all duration-300 ${
               draggingOverViewer
                 ? (darkMode ? 'bg-blue-900/40 border-4 border-blue-500 border-dashed' : 'bg-blue-100 border-4 border-blue-500 border-dashed')
                 : ''
