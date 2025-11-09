@@ -1,8 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, MessageSquare, Send, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Copy, Check, Settings, CheckCircle, XCircle, RotateCw, Search, Download, Printer, Menu, Home, FileText, Bookmark, Maximize2, Minimize2, BookOpen, File, LayoutGrid, HelpCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, MessageSquare, Send, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2, Copy, Check, Settings, CheckCircle, XCircle, RotateCw, Search, Printer, Menu, Home, FileText, Bookmark, Maximize2, Minimize2, BookOpen, File, HelpCircle, LogOut } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  saveApiKey,
+  getApiKey,
+  saveDocument,
+  updateBookmarks,
+  saveConversation,
+  getConversation
+} from '../services/firestore.service';
 
 const PDFStudyApp = () => {
+  // Auth e navegação
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+
   // Refs primeiro
   const canvasRef = useRef(null);
   const canvas2Ref = useRef(null);
@@ -95,12 +109,31 @@ const PDFStudyApp = () => {
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
     script.async = true;
     script.onload = () => {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
         'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     };
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
   }, []);
+
+  // Carregar API Key do Firestore quando o componente montar
+  useEffect(() => {
+    if (currentUser && llmProvider) {
+      const loadApiKey = async () => {
+        try {
+          const keyData = await getApiKey(currentUser.uid, llmProvider);
+          if (keyData) {
+            setApiKey(keyData.apiKey);
+            setModelName(keyData.modelName || llmProviders[llmProvider].defaultModel);
+            setApiKeyValid(true);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar API Key do Firestore:', error);
+        }
+      };
+      loadApiKey();
+    }
+  }, [currentUser, llmProvider]);
 
   useEffect(() => {
     if (pdfDoc) {
@@ -397,7 +430,16 @@ const PDFStudyApp = () => {
       setApiKeyValid(isValid);
       toast.dismiss('api-validate');
       if (isValid) {
-        toast.success('API Key validada com sucesso!', { duration: 3 });
+        // Salvar API Key no Firestore
+        if (currentUser) {
+          try {
+            await saveApiKey(currentUser.uid, llmProvider, apiKey, modelName);
+            toast.success('API Key validada e salva com sucesso!', { duration: 3 });
+          } catch (error) {
+            console.error('Erro ao salvar API Key no Firestore:', error);
+            toast.error('API Key validada, mas erro ao salvar. Tente novamente.', { duration: 4 });
+          }
+        }
       } else {
         toast.error('API Key inválida. Verifique e tente novamente.', { duration: 4 });
       }
@@ -498,9 +540,20 @@ Responda com base neste contexto.`;
         }
       }
 
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+      const newMessages = [...messages, userMessage, { role: 'assistant', content: assistantContent }];
+      setMessages(newMessages);
       toast.dismiss('send-msg');
       toast.success('Resposta recebida!', { duration: 2 });
+
+      // Salvar conversa no Firestore
+      if (currentUser && pdfFile) {
+        try {
+          const documentId = pdfFile.replace(/\.[^/.]+$/, ''); // Remove extensão
+          await saveConversation(currentUser.uid, documentId, newMessages);
+        } catch (error) {
+          console.error('Erro ao salvar conversa no Firestore:', error);
+        }
+      }
     } catch (error) {
       console.error('Erro:', error);
       setMessages(prev => [...prev, {
@@ -515,14 +568,36 @@ Responda com base neste contexto.`;
     }
   };
 
-  const toggleBookmark = () => {
+  const toggleBookmark = async () => {
     const exists = bookmarks.includes(currentPage);
-    if (exists) {
-      setBookmarks(bookmarks.filter(p => p !== currentPage));
-      toast.success(`Marcador removido da página ${currentPage}`, { duration: 2 });
+    const newBookmarks = exists
+      ? bookmarks.filter(p => p !== currentPage)
+      : [...bookmarks, currentPage].sort((a, b) => a - b);
+
+    setBookmarks(newBookmarks);
+
+    // Salvar no Firestore
+    if (currentUser && pdfFile) {
+      try {
+        const documentId = pdfFile.replace(/\.[^/.]+$/, ''); // Remove extensão
+        await updateBookmarks(currentUser.uid, documentId, newBookmarks);
+        toast.success(
+          exists
+            ? `Marcador removido da página ${currentPage}`
+            : `Marcador adicionado na página ${currentPage}`,
+          { duration: 2 }
+        );
+      } catch (error) {
+        console.error('Erro ao salvar marcador:', error);
+        toast.error('Erro ao salvar marcador', { duration: 2 });
+      }
     } else {
-      setBookmarks([...bookmarks, currentPage].sort((a, b) => a - b));
-      toast.success(`Marcador adicionado na página ${currentPage}`, { duration: 2 });
+      toast.success(
+        exists
+          ? `Marcador removido da página ${currentPage}`
+          : `Marcador adicionado na página ${currentPage}`,
+        { duration: 2 }
+      );
     }
   };
 
@@ -842,6 +917,21 @@ Responda com base neste contexto.`;
               >
                 <MessageSquare size={18} />
                 Chat IA
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await logout();
+                    navigate('/login');
+                  } catch (error) {
+                    console.error('Erro ao fazer logout:', error);
+                    toast.error('Erro ao fazer logout', { duration: 3 });
+                  }
+                }}
+                className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                title="Fazer logout"
+              >
+                <LogOut size={18} />
               </button>
             </div>
           </div>
