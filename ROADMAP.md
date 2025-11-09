@@ -1,6 +1,17 @@
 # 🗺️ Roadmap - PDF Sage
 
-## 📍 Estado Atual: **v0.1.0 - MVP Funcional**
+## 📍 Estado Atual: **v0.1.0 - MVP Funcional** → v0.1.5 (Firebase & Bugs)
+
+---
+
+## ⚠️ ATUALIZAÇÃO CRÍTICA: FASE 0 Adicionada
+
+**Antes de prosseguir com novas features, é ESSENCIAL implementar:**
+- 🔒 Autenticação com Firebase/Google
+- 🔥 Migração para Firestore (sem API keys no localStorage)
+- 🐛 Correção de ícones quebrados
+
+**Nova versão intermediária:** v0.1.5 - Infraestrutura e Segurança
 
 ---
 
@@ -25,14 +36,23 @@ Transformar o PDF Sage na **plataforma definitiva para leitura inteligente de PD
 │  ├─ ✅ v0.1.0 - MVP Básico (CONCLUÍDO)
 │  │   └─ Leitor PDF + Chat IA + Configurações
 │  │
-│  ├─ 🎯 v0.2.0 - UX Aprimorada (Fev)
+│  ├─ ⚠️ v0.1.5 - Firebase & Correções (Nov) **CRÍTICO**
+│  │   ├─ Correção de ícones quebrados
+│  │   ├─ Autenticação Firebase/Google
+│  │   ├─ Página de /login
+│  │   ├─ Firestore para dados do usuário
+│  │   ├─ API Keys seguras (Firestore encriptado)
+│  │   ├─ Regras de segurança Firestore
+│  │   └─ Migração completa de localStorage
+│  │
+│  ├─ 🎯 v0.2.0 - UX Aprimorada (Dez-Jan)
 │  │   ├─ Drag & drop de PDFs
 │  │   ├─ Sistema de notificações
 │  │   ├─ Tema claro/escuro
 │  │   ├─ Atalhos de teclado expandidos
 │  │   └─ Error boundaries
 │  │
-│  └─ 🎯 v0.3.0 - Tradução Dedicada (Mar)
+│  └─ 🎯 v0.3.0 - Tradução Dedicada (Fev-Mar)
 │      ├─ Modal de tradução
 │      ├─ Tradução de seleção/página
 │      ├─ Visualização lado a lado
@@ -125,7 +145,97 @@ Transformar o PDF Sage na **plataforma definitiva para leitura inteligente de PD
 
 ---
 
-### **v0.2.0 - UX Aprimorada** 🎯 *Fevereiro 2025*
+### **v0.1.5 - Firebase & Correções** ⚠️ *Novembro 2025* **CRÍTICO**
+
+**Objetivo**: Corrigir bugs críticos e implementar infraestrutura segura
+
+**Funcionalidades Principais:**
+
+**Correção de Bugs:**
+- ⚠️ Corrigir ícones do lucide-react que não renderizam
+- ⚠️ Verificar e corrigir importações
+- ⚠️ Testar todos os componentes visuais
+- ⚠️ Documentar problemas encontrados e soluções
+
+**Autenticação Firebase:**
+- 🔐 Criar projeto no Firebase Console
+- 🔐 Configurar Google Sign-In
+- 🔐 Implementar página de /login
+- 🔐 Contexto de autenticação (AuthContext)
+- 🔐 Protected Routes
+- 🔐 Fluxo de logout
+
+**Firestore Database:**
+- 🔥 Configurar Firestore Database
+- 🔥 Criar coleções: users, api_keys, documents, conversations
+- 🔥 Implementar serviço de database (firestore.service.js)
+- 🔥 Funções CRUD para todas as coleções
+- 🔥 Encriptação de API Keys (crypto-js)
+- 🔥 Sincronização em tempo real
+
+**Migração de Dados:**
+- 📦 Remover API Keys do localStorage
+- 📦 Migrar configurações para Firestore
+- 📦 Migrar marcadores para Firestore (por usuário)
+- 📦 Migrar histórico de conversas
+- 📦 Documentos recentes no Firestore
+- 📦 Manter apenas preferências visuais em localStorage
+
+**Segurança:**
+- 🛡️ Regras de segurança Firestore
+- 🛡️ Variáveis de ambiente (.env.local)
+- 🛡️ Dados isolados por usuário
+- 🛡️ API Keys nunca em texto plano
+
+**Roteamento:**
+- 🚦 React Router implementado
+- 🚦 Rota /login (pública)
+- 🚦 Rota /app (privada)
+- 🚦 Redirecionamentos automáticos
+
+**Estrutura de Arquivos Criada:**
+```
+src/
+├── config/
+│   └── firebase.js
+├── contexts/
+│   └── AuthContext.jsx
+├── services/
+│   ├── auth.service.js
+│   └── firestore.service.js
+├── pages/
+│   ├── Login.jsx
+│   └── App.jsx
+├── components/
+│   └── PrivateRoute.jsx
+└── .env.local
+```
+
+**Métricas de Sucesso:**
+- ✅ Login com Google funciona 100%
+- ✅ API Keys nunca aparecem no localStorage
+- ✅ Apenas usuários autenticados acessam /app
+- ✅ Dados sincronizam em tempo real
+- ✅ Regras de segurança impedem acesso não autorizado
+- ✅ Todos os ícones renderizam corretamente
+- ✅ 0 erros no console do navegador
+
+**Documentação:**
+- 📚 FIREBASE_SETUP.md criado com guia completo
+- 📚 Exemplos de código funcionais
+- 📚 Troubleshooting documentado
+
+**Esforço Estimado**: 3-5 dias
+
+**Dependências Adicionadas:**
+- firebase
+- react-firebase-hooks
+- react-router-dom
+- crypto-js
+
+---
+
+### **v0.2.0 - UX Aprimorada** 🎯 *Dezembro 2025 - Janeiro 2026*
 
 **Objetivo**: Melhorar experiência do usuário e usabilidade
 
@@ -451,8 +561,9 @@ Transformar o PDF Sage na **plataforma definitiva para leitura inteligente de PD
 | Data | Marco | Status |
 |------|-------|--------|
 | Jan 2025 | ✅ MVP Funcional | Concluído |
-| Fev 2025 | 🎯 UX Aprimorada | Planejado |
-| Mar 2025 | 🎯 Sistema de Tradução | Planejado |
+| **Nov 2025** | ⚠️ **Firebase & Correções** | **URGENTE** |
+| Dez 2025 | 🎯 UX Aprimorada | Planejado |
+| Fev 2026 | 🎯 Sistema de Tradução | Planejado |
 | Abr 2025 | 🔮 Persistência de Dados | Futuro |
 | Mai 2025 | 🔮 IA Avançada | Futuro |
 | Jun 2025 | 🔮 Sistema de Anotações | Futuro |
