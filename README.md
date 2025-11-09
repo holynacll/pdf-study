@@ -1,16 +1,230 @@
-# React + Vite
+🚀 Guia de Instalação Local
+1️⃣ Pré-requisitos
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Node.js (versão 16 ou superior) - Download aqui
+npm ou yarn (vem com Node.js)
+Editor de código (recomendo VS Code)
 
-Currently, two official plugins are available:
+2️⃣ Criar o Projeto
+bash# Criar projeto React com Vite (mais rápido)
+npm create vite@latest pdf-study-app -- ## **🚀 Guia de Instalação Local**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### **1️⃣ Pré-requisitos**
 
-## React Compiler
+* **Node.js** (versão 16 ou superior) \- [Download aqui](https://nodejs.org/)  
+* **npm** ou **yarn** (vem com Node.js)  
+* Editor de código (recomendo **VS Code**)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### **2️⃣ Criar o Projeto**
 
-## Expanding the ESLint configuration
+bash  
+*\# Criar projeto React com Vite (mais rápido)*  
+npm create vite@latest pdf-study-app \-- \--template react
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+*\# OU com Create React App (tradicional)*  
+npx create-react-app pdf-study-app
+
+*\# Entrar na pasta*
+
+cd pdf-study-app
+
+### **3️⃣ Instalar Dependências**
+
+bash  
+*\# Instalar Tailwind CSS*  
+npm install \-D tailwindcss postcss autoprefixer  
+npx tailwindcss init \-p
+
+*\# Instalar lucide-react (ícones)*
+
+npm install lucide-react
+
+### **4️⃣ Configurar Tailwind CSS**
+
+Edite `tailwind.config.js`:
+
+javascript  
+*/\*\* @type {import('tailwindcss').Config} \*/*  
+export default {  
+  content: \[  
+    "./index.html",  
+    "./src/\*\*/\*.{js,ts,jsx,tsx}",  
+  \],  
+  theme: {  
+    extend: {},  
+  },  
+  plugins: \[\],
+
+}
+
+Edite `src/index.css` (ou `src/App.css`):
+
+css  
+@tailwind base;  
+@tailwind components;
+
+@tailwind utilities;
+
+### **5️⃣ Adicionar o Código**
+
+Substitua o conteúdo de `src/App.jsx` pelo código completo do artefato que criei.
+
+### **6️⃣ Executar**
+
+bash  
+*\# Iniciar servidor de desenvolvimento*  
+npm run dev
+
+*\# Ou se usou Create React App:*  
+npm start  
+\`\`\`
+
+Acesse: \`http://localhost:5173\` (Vite) ou \`http://localhost:3000\` (CRA)
+
+\---
+
+*\#\# 📦 Estrutura de Pastas*  
+\`\`\`  
+pdf-study-app/  
+├── node\_modules/  
+├── public/  
+├── src/  
+│   ├── App.jsx          \<\- Cole o código aqui  
+│   ├── index.css        \<\- Adicione Tailwind  
+│   └── main.jsx  
+├── index.html  
+├── package.json  
+├── tailwind.config.js
+
+└── vite.config.js
+
+---
+
+## **🔑 Configurar API Keys**
+
+Depois que a aplicação estiver rodando:
+
+1. Clique no botão **"Config"**  
+2. Escolha o provedor (Claude/GPT/Gemini)  
+3. Cole sua API Key  
+4. Clique em **"Validar"**
+
+### **Onde obter API Keys:**
+
+* **Claude**: [console.anthropic.com](https://console.anthropic.com/)  
+* **OpenAI**: [platform.openai.com/api-keys](https://platform.openai.com/api-keys)  
+* **Gemini**: [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+
+---
+
+## **🐛 Problemas Comuns**
+
+**Erro de importação do Tailwind:**
+
+* Certifique-se que adicionou `@tailwind` no CSS
+
+**Ícones não aparecem:**
+
+bash
+
+npm install lucide-react
+
+**PDF.js não carrega:**
+
+* O CDN já está configurado no código, deve funcionar automaticamente
+
+**Porta já em uso:**
+
+bash  
+*\# Vite \- use outra porta*
+
+npm run dev \-- \--port 3001
+
+--template react
+
+# OU com Create React App (tradicional)
+npx create-react-app pdf-study-app
+
+# Entrar na pasta
+cd pdf-study-app
+3️⃣ Instalar Dependências
+bash# Instalar Tailwind CSS
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+
+# Instalar lucide-react (ícones)
+npm install lucide-react
+4️⃣ Configurar Tailwind CSS
+Edite tailwind.config.js:
+javascript/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+Edite src/index.css (ou src/App.css):
+css@tailwind base;
+@tailwind components;
+@tailwind utilities;
+5️⃣ Adicionar o Código
+Substitua o conteúdo de src/App.jsx pelo código completo do artefato que criei.
+6️⃣ Executar
+bash# Iniciar servidor de desenvolvimento
+npm run dev
+
+# Ou se usou Create React App:
+npm start
+```
+
+Acesse: `http://localhost:5173` (Vite) ou `http://localhost:3000` (CRA)
+
+---
+
+## 📦 Estrutura de Pastas
+```
+pdf-study-app/
+├── node_modules/
+├── public/
+├── src/
+│   ├── App.jsx          <- Cole o código aqui
+│   ├── index.css        <- Adicione Tailwind
+│   └── main.jsx
+├── index.html
+├── package.json
+├── tailwind.config.js
+└── vite.config.js
+
+🔑 Configurar API Keys
+Depois que a aplicação estiver rodando:
+
+Clique no botão "Config"
+Escolha o provedor (Claude/GPT/Gemini)
+Cole sua API Key
+Clique em "Validar"
+
+Onde obter API Keys:
+
+Claude: console.anthropic.com
+OpenAI: platform.openai.com/api-keys
+Gemini: aistudio.google.com/app/apikey
+
+
+🐛 Problemas Comuns
+Erro de importação do Tailwind:
+
+Certifique-se que adicionou @tailwind no CSS
+
+Ícones não aparecem:
+bashnpm install lucide-react
+PDF.js não carrega:
+
+O CDN já está configurado no código, deve funcionar automaticamente
+
+Porta já em uso:
+bash# Vite - use outra porta
+npm run dev -- --port 3001
