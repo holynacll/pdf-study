@@ -542,15 +542,36 @@ const PDFStudyApp = () => {
       return;
     }
 
-    const contextInfo = `Contexto do Documento:
+    let contextInfo = '';
+
+    if (selectedTextInMessage) {
+      // Quando há texto selecionado, deixar claro que é o foco principal
+      contextInfo = `INSTRUÇÕES IMPORTANTES:
+Você está trabalhando com um texto ESPECÍFICO selecionado pelo usuário.
+
+TEXTO SELECIONADO (FOCO PRINCIPAL):
+"""
+${selectedTextInMessage}
+"""
+
+Contexto do Documento:
 - PDF: "${pdfFile || 'documento'}"
 - Página: ${currentPage} de ${totalPages}
-${selectedText ? `- Texto selecionado: "${selectedText}"` : ''}
+
+IMPORTANTE: Trabalhe PRINCIPALMENTE com o texto selecionado acima.
+Use o contexto da página apenas como referência adicional se necessário.
+A resposta deve focar no texto selecionado, não em toda a página.`;
+    } else {
+      // Quando não há texto selecionado, usar contexto completo da página
+      contextInfo = `Contexto do Documento:
+- PDF: "${pdfFile || 'documento'}"
+- Página: ${currentPage} de ${totalPages}
 
 Conteúdo da página atual:
 ${pageTextContent.substring(0, 3000)}${pageTextContent.length > 3000 ? '...' : ''}
 
 Responda com base neste contexto.`;
+    }
 
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -667,6 +688,7 @@ Responda com base neste contexto.`;
     } finally {
       setLoading(false);
       setSelectedText('');
+      setSelectedTextInMessage(''); // Limpa a referência após enviar
     }
   };
 
