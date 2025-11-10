@@ -154,39 +154,33 @@ const PDFStudyApp = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Navegação - Próxima página (→) e Página anterior (←)
       if (e.key === 'ArrowLeft' && !e.target.matches('input, textarea')) {
         setCurrentPage(prev => Math.max(1, prev - 1));
       } else if (e.key === 'ArrowRight' && !e.target.matches('input, textarea')) {
         setCurrentPage(prev => Math.min(totalPages, prev + 1));
-      } else if (e.key === 'Home' && !e.target.matches('input, textarea')) {
-        setCurrentPage(1);
-      } else if (e.key === 'End' && !e.target.matches('input, textarea')) {
-        setCurrentPage(totalPages);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '+') {
-        e.preventDefault();
-        setScale(prev => Math.min(3, prev + 0.25));
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-        e.preventDefault();
-        setScale(prev => Math.max(0.5, prev - 0.25));
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault();
-        setScale(1.5);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      }
+      // Busca e Ferramentas
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault();
         setSearchOpen(true);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setChatOpen(true);
-      } else if (e.key === 'Escape') {
-        setSearchOpen(false);
-        setFullscreen(false);
-        setShowKeyboardShortcuts(false);
-      } else if (e.key === '?' || e.key === 'F1') {
-        e.preventDefault();
-        setShowKeyboardShortcuts(true);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         if (pdfDoc) toggleBookmark();
+      }
+      // Geral - Sair da busca / Sair de tela cheia
+      else if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setFullscreen(false);
+        setShowKeyboardShortcuts(false);
+      }
+      // Mostrar este painel (F1)
+      else if (e.key === 'F1') {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -970,15 +964,6 @@ Responda com base neste contexto.`;
                 Abrir
               </button>
               <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileUpload} className="hidden" />
-              {pdfFile && (
-                <button
-                  onClick={() => window.print()}
-                  className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
-                  title="Imprimir"
-                >
-                  <Printer size={18} />
-                </button>
-              )}
             </div>
 
             {pdfDoc && (
@@ -1589,36 +1574,6 @@ Responda com base neste contexto.`;
                       <span className="font-medium">Página anterior</span>
                       <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>←</kbd>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Primeira página</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Home</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Última página</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>End</kbd>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Zoom */}
-                <div className={`p-5 rounded-xl border-2 ${darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gradient-to-r from-green-50 to-green-100 border-green-200'}`}>
-                  <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-green-300' : 'text-green-900'}`}>
-                    <Search size={22} />
-                    Zoom
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Aumentar zoom</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Ctrl +</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Diminuir zoom</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Ctrl -</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Zoom padrão (150%)</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Ctrl 0</kbd>
-                    </div>
                   </div>
                 </div>
 
@@ -1657,7 +1612,7 @@ Responda com base neste contexto.`;
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Mostrar este painel</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>? ou F1</kbd>
+                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>F1</kbd>
                     </div>
                   </div>
                 </div>
