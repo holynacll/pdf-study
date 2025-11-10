@@ -418,7 +418,7 @@ const PDFStudyApp = () => {
 
   const askAI = () => {
     if (selectedText) {
-      setInput(selectedText);
+      setInput('');
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setSelectedText('');
@@ -429,7 +429,7 @@ const PDFStudyApp = () => {
 
   const copyToChat = () => {
     if (selectedText) {
-      setInput(selectedText);
+      setInput('');
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setCopied(true);
@@ -442,7 +442,7 @@ const PDFStudyApp = () => {
 
   const translateText = () => {
     if (selectedText) {
-      setInput(`Traduza este texto para português:\n\n"${selectedText}"`);
+      setInput('Traduza este texto para português:');
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setSelectedText('');
@@ -453,7 +453,7 @@ const PDFStudyApp = () => {
 
   const explainText = () => {
     if (selectedText) {
-      setInput(`Explique este texto de forma clara e detalhada:\n\n"${selectedText}"`);
+      setInput('Explique este texto de forma clara e detalhada:');
       setSelectedTextInMessage(selectedText);
       setHighlightedText(selectedText);
       setSelectedText('');
