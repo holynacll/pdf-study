@@ -417,15 +417,16 @@ const PDFStudyApp = () => {
     if (!text.trim()) return;
 
     // Limpar a seleção de caracteres invisíveis e excesso de espaços
-    // Remover quebras de linha múltiplas e substituir por uma única
+    // IMPORTANTE: Processar padrões com quebras de linha ANTES de normalizar espaços
     text = text
-      .replace(/\s+/g, ' ')           // Múltiplos espaços/tabs/quebras → 1 espaço
-      .replace(/\n\s+\n/g, '\n')      // Quebras duplas com espaço → quebra simples
-      .replace(/(\r\n|\r)/g, '\n')    // Normalizar quebras de linha
-      .replace(/\n\s*•\s*/g, ' • ')   // Bullets com espaço inconsistente
-      .replace(/\n\s*-\s*/g, ' - ')   // Hífens com espaço inconsistente
-      .replace(/\n\s*\d+\.\s*/g, ' ') // Números com ponto (listas numeradas)
-      .replace(/\s+/g, ' ')           // Limpar espaços extras novamente
+      .replace(/(\r\n|\r)/g, '\n')    // Normalizar quebras de linha (CRLF/CR → LF)
+      .replace(/\n\s+/g, '\n')        // Remove espaços no início após quebras
+      .replace(/\s+\n/g, '\n')        // Remove espaços no final antes de quebras
+      .replace(/\n\s*•\s*/g, ' • ')   // Bullets com quebra → inline com espaços
+      .replace(/\n\s*-\s*/g, ' - ')   // Hífens com quebra → inline com espaços
+      .replace(/\n\s*\d+\.\s*/g, ' ') // Listas numeradas com quebra → inline
+      .replace(/\n+/g, ' ')           // Quebras de linha restantes → espaço
+      .replace(/\s+/g, ' ')           // Múltiplos espaços/tabs → espaço único
       .trim();                         // Trim final
 
     if (text) setSelectedText(text);
