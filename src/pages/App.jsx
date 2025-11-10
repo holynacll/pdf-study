@@ -1464,23 +1464,12 @@ Responda com base neste contexto.`;
                   <label className={`block text-sm font-bold mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                     Modelo
                   </label>
-                  <select
-                    value={modelName}
-                    onChange={(e) => setModelName(e.target.value)}
-                    className={`w-full p-4 border-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                  >
-                    {llmProviders[llmProvider].models.map((model) => (
-                      <option key={model} value={model}>{model}</option>
-                    ))}
-                  </select>
                   <input
                     type="text"
                     value={modelName}
                     onChange={(e) => setModelName(e.target.value)}
-                    placeholder="Ou digite um modelo personalizado"
-                    className={`w-full p-4 border-2 rounded-xl mt-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
+                    placeholder="Ex: claude-sonnet-4-20250514, gpt-4o, gemini-1.5-pro"
+                    className={`w-full p-4 border-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
                       darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
                   />
@@ -1702,21 +1691,8 @@ Responda com base neste contexto.`;
               </button>
             </div>
 
-            {/* Controles do Chat - Modelo e Limpar (Inline) */}
-            <div className={`px-4 py-2 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'} flex items-center gap-2`}>
-              {/* Select de modelo sem label */}
-              <select
-                value={modelName}
-                onChange={(e) => setModelName(e.target.value)}
-                className={`flex-1 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-xs font-medium text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all ${
-                  darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                }`}
-              >
-                {llmProviders[llmProvider].models.map((model) => (
-                  <option key={model} value={model}>{model}</option>
-                ))}
-              </select>
-
+            {/* Controles do Chat - Limpar */}
+            <div className={`px-4 py-2 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'} flex items-center gap-2 justify-end`}>
               {/* Botão limpar compacto */}
               <button
                 onClick={clearChat}
