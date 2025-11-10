@@ -412,7 +412,22 @@ const PDFStudyApp = () => {
 
   const handleTextSelection = () => {
     const selection = window.getSelection();
-    const text = selection.toString().trim();
+    let text = selection.toString();
+
+    if (!text.trim()) return;
+
+    // Limpar a seleção de caracteres invisíveis e excesso de espaços
+    // Remover quebras de linha múltiplas e substituir por uma única
+    text = text
+      .replace(/\s+/g, ' ')           // Múltiplos espaços/tabs/quebras → 1 espaço
+      .replace(/\n\s+\n/g, '\n')      // Quebras duplas com espaço → quebra simples
+      .replace(/(\r\n|\r)/g, '\n')    // Normalizar quebras de linha
+      .replace(/\n\s*•\s*/g, ' • ')   // Bullets com espaço inconsistente
+      .replace(/\n\s*-\s*/g, ' - ')   // Hífens com espaço inconsistente
+      .replace(/\n\s*\d+\.\s*/g, ' ') // Números com ponto (listas numeradas)
+      .replace(/\s+/g, ' ')           // Limpar espaços extras novamente
+      .trim();                         // Trim final
+
     if (text) setSelectedText(text);
   };
 
