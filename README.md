@@ -346,26 +346,6 @@ netlify deploy --prod
 
 ---
 
-## 📝 Roadmap
-
-### v0.2.0 - UX Aprimorada (Em breve)
-- [ ] Drag & drop melhorado
-- [ ] Notificações ricas
-- [ ] Animações suaves
-- [ ] Loading skeletons
-
-### v0.3.0 - Tradução Dedicada
-- [ ] Modal de tradução
-- [ ] Tradução de seleção
-
-### v1.0.0 - Lançamento Público
-- [ ] Testes completos
-- [ ] Documentação final
-- [ ] Marketing
-- [ ] Lançamento oficial
-
----
-
 ## 🤝 Contribuindo
 
 Contribuições são bem-vindas!
