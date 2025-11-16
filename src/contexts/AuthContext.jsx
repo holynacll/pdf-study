@@ -1,11 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, googleProvider, db } from '../config/firebase';
+import authService from '../services/auth/auth.service';
+
+/**
+ * Context de Autenticação - Refatorado
+ *
+ * Princípios SOLID aplicados:
+ * - Single Responsibility: Apenas gerencia estado de autenticação, não lógica de negócio
+ * - Dependency Inversion: Depende de abstração (authService), não de implementação
+ *
+ * A lógica de autenticação foi movida para authService, seguindo SRP
+ */
 
 const AuthContext = createContext();
 
@@ -21,49 +25,20 @@ export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Login com Google
+  // Login com Google - delega para authService
   const loginWithGoogle = async () => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
-      // Criar/atualizar documento do usuário no Firestore
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-        // Primeiro login - criar documento
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          photoURL: user.photoURL,
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
-          preferences: {
-            theme: 'light',
-            defaultZoom: 1.5,
-            defaultLLM: 'anthropic'
-          }
-        });
-      } else {
-        // Atualizar último login
-        await setDoc(userRef, {
-          lastLogin: serverTimestamp()
-        }, { merge: true });
-      }
-
-      return user;
+      return await authService.loginWithGoogle();
     } catch (error) {
       console.error('Erro ao fazer login:', error);
       throw error;
     }
   };
 
-  // Logout
+  // Logout - delega para authService
   const logout = async () => {
     try {
-      await signOut(auth);
+      await authService.logout();
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
       throw error;
@@ -72,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   // Observar mudanças de autenticação
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = authService.onAuthStateChanged((user) => {
       setCurrentUser(user);
       setLoading(false);
     });
