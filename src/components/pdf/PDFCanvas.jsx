@@ -7,7 +7,7 @@ import React from 'react';
  * - Single Responsibility: Apenas renderiza o canvas
  * - Separation of Concerns: Lógica de renderização no hook usePDF
  */
-const PDFCanvas = ({ canvasRef, textLayerRef, show = true }) => {
+const PDFCanvas = ({ canvasRef, textLayerRef, show = true, onTextSelection }) => {
   if (!show) return null;
 
   return (
@@ -17,6 +17,7 @@ const PDFCanvas = ({ canvasRef, textLayerRef, show = true }) => {
         ref={textLayerRef}
         className="textLayer absolute top-0 left-0 opacity-0"
         style={{ pointerEvents: 'auto' }}
+        onMouseUp={onTextSelection}
       />
     </div>
   );

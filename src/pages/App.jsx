@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { usePDF, useChat, useKeyboardShortcuts, useDarkMode } from '../hooks';
+import { usePDF, useChat, useKeyboardShortcuts, useDarkMode, useTextSelection } from '../hooks';
 import {
   Header,
   PDFViewer,
   ChatPanel,
-  SettingsPanel
+  SettingsPanel,
+  TextSelectionMenu
 } from '../components';
 
 /**
@@ -42,6 +43,9 @@ const PDFStudyApp = () => {
 
   // Chat hook - gerencia todo estado e lógica de chat
   const chatState = useChat(currentUser?.uid, pdfState.pdfDoc?.fingerprint);
+
+  // Text selection hook - gerencia seleção de texto no PDF
+  const textSelection = useTextSelection();
 
   // Keyboard shortcuts hook
   useKeyboardShortcuts({
@@ -86,6 +90,38 @@ const PDFStudyApp = () => {
 
   const handleSendMessage = () => {
     chatState.sendMessage(pdfState.pageTextContent);
+  };
+
+  // Handlers para seleção de texto
+  const handleAskAI = () => {
+    if (textSelection.selectedText) {
+      chatState.setInput('');
+      setChatOpen(true);
+      // Adiciona o texto selecionado como contexto
+      setTimeout(() => {
+        chatState.setInput(textSelection.selectedText);
+      }, 100);
+      textSelection.clearSelection();
+      toast.success('Pergunta adicionada ao chat! 💬', { duration: 2000 });
+    }
+  };
+
+  const handleTranslate = () => {
+    if (textSelection.selectedText) {
+      chatState.setInput(`Traduza este texto para português:\n\n${textSelection.selectedText}`);
+      setChatOpen(true);
+      textSelection.clearSelection();
+      toast.success('Tradução solicitada! 🌐', { duration: 2000 });
+    }
+  };
+
+  const handleExplain = () => {
+    if (textSelection.selectedText) {
+      chatState.setInput(`Explique este texto de forma clara e detalhada:\n\n${textSelection.selectedText}`);
+      setChatOpen(true);
+      textSelection.clearSelection();
+      toast.success('Explicação solicitada! 💡', { duration: 2000 });
+    }
   };
 
   return (
@@ -137,6 +173,7 @@ const PDFStudyApp = () => {
           onDragOver={pdfState.handleDragOver}
           onDragLeave={pdfState.handleDragLeave}
           onDrop={pdfState.handleDrop}
+          onTextSelection={textSelection.handleTextSelection}
         />
 
         {/* Chat Panel */}
@@ -169,6 +206,16 @@ const PDFStudyApp = () => {
         onModelChange={chatState.setModelName}
         onValidateApiKey={chatState.validateApiKey}
         onDeleteApiKey={chatState.deleteApiKey}
+      />
+
+      {/* Text Selection Menu */}
+      <TextSelectionMenu
+        selectedText={textSelection.selectedText}
+        darkMode={darkMode}
+        onAskAI={handleAskAI}
+        onTranslate={handleTranslate}
+        onExplain={handleExplain}
+        onClose={textSelection.clearSelection}
       />
     </div>
   );

@@ -36,7 +36,8 @@ const PDFViewer = ({
   onFileUpload,
   onDragOver,
   onDragLeave,
-  onDrop
+  onDrop,
+  onTextSelection
 }) => {
   // Listener para fullscreen change
   useEffect(() => {
@@ -93,6 +94,7 @@ const PDFViewer = ({
               canvasRef={canvasRef}
               textLayerRef={textLayerRef}
               show={true}
+              onTextSelection={onTextSelection}
             />
 
             {/* Segunda página (modo duplo) */}
@@ -101,6 +103,7 @@ const PDFViewer = ({
                 canvasRef={canvas2Ref}
                 textLayerRef={textLayer2Ref}
                 show={true}
+                onTextSelection={onTextSelection}
               />
             )}
           </div>
