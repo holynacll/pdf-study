@@ -36,7 +36,7 @@ const PDFStudyApp = () => {
   const [pageTextContent, setPageTextContent] = useState('');
   const [scrollMode, setScrollMode] = useState('page');
   const [pageMode, setPageMode] = useState('single');
-  
+
   // Estados de UI
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [leftSidebarTab, setLeftSidebarTab] = useState('thumbnails');
@@ -56,6 +56,8 @@ const PDFStudyApp = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [selectedTextInMessage, setSelectedTextInMessage] = useState(''); // texto selecionado que está no input
+  const [highlightedText, setHighlightedText] = useState(''); // para destaque visual
   const [copied, setCopied] = useState(false);
   
   // Estados de configuração LLM
@@ -152,39 +154,33 @@ const PDFStudyApp = () => {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Navegação - Próxima página (→) e Página anterior (←)
       if (e.key === 'ArrowLeft' && !e.target.matches('input, textarea')) {
         setCurrentPage(prev => Math.max(1, prev - 1));
       } else if (e.key === 'ArrowRight' && !e.target.matches('input, textarea')) {
         setCurrentPage(prev => Math.min(totalPages, prev + 1));
-      } else if (e.key === 'Home' && !e.target.matches('input, textarea')) {
-        setCurrentPage(1);
-      } else if (e.key === 'End' && !e.target.matches('input, textarea')) {
-        setCurrentPage(totalPages);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '+') {
-        e.preventDefault();
-        setScale(prev => Math.min(3, prev + 0.25));
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
-        e.preventDefault();
-        setScale(prev => Math.max(0.5, prev - 0.25));
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
-        e.preventDefault();
-        setScale(1.5);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      }
+      // Busca e Ferramentas
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault();
         setSearchOpen(true);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         setChatOpen(true);
-      } else if (e.key === 'Escape') {
-        setSearchOpen(false);
-        setFullscreen(false);
-        setShowKeyboardShortcuts(false);
-      } else if (e.key === '?' || e.key === 'F1') {
-        e.preventDefault();
-        setShowKeyboardShortcuts(true);
       } else if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         if (pdfDoc) toggleBookmark();
+      }
+      // Geral - Sair da busca / Sair de tela cheia
+      else if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setFullscreen(false);
+        setShowKeyboardShortcuts(false);
+      }
+      // Mostrar este painel (F1)
+      else if (e.key === 'F1') {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -410,15 +406,69 @@ const PDFStudyApp = () => {
 
   const handleTextSelection = () => {
     const selection = window.getSelection();
-    const text = selection.toString().trim();
+    let text = selection.toString();
+
+    if (!text.trim()) return;
+
+    // Limpar a seleção de caracteres invisíveis e excesso de espaços
+    // IMPORTANTE: Processar padrões com quebras de linha ANTES de normalizar espaços
+    text = text
+      .replace(/(\r\n|\r)/g, '\n')    // Normalizar quebras de linha (CRLF/CR → LF)
+      .replace(/\n\s+/g, '\n')        // Remove espaços no início após quebras
+      .replace(/\s+\n/g, '\n')        // Remove espaços no final antes de quebras
+      .replace(/\n\s*•\s*/g, ' • ')   // Bullets com quebra → inline com espaços
+      .replace(/\n\s*-\s*/g, ' - ')   // Hífens com quebra → inline com espaços
+      .replace(/\n\s*\d+\.\s*/g, ' ') // Listas numeradas com quebra → inline
+      .replace(/\n+/g, ' ')           // Quebras de linha restantes → espaço
+      .replace(/\s+/g, ' ')           // Múltiplos espaços/tabs → espaço único
+      .trim();                         // Trim final
+
     if (text) setSelectedText(text);
+  };
+
+  const askAI = () => {
+    if (selectedText) {
+      setInput('');
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
+      setSelectedText('');
+      setChatOpen(true);
+      toast.success('Pergunta adicionada ao chat! 💬', { duration: 2 });
+    }
   };
 
   const copyToChat = () => {
     if (selectedText) {
-      setInput(prev => prev + (prev ? '\n\n' : '') + `"${selectedText}"`);
+      setInput('');
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+      setSelectedText('');
+      setChatOpen(true);
+      toast.success('Texto adicionado ao chat! ✓', { duration: 2 });
+    }
+  };
+
+  const translateText = () => {
+    if (selectedText) {
+      setInput('Traduza este texto para português:');
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
+      setSelectedText('');
+      setChatOpen(true);
+      toast.success('Tradução solicitada! 🌐', { duration: 2 });
+    }
+  };
+
+  const explainText = () => {
+    if (selectedText) {
+      setInput('Explique este texto de forma clara e detalhada:');
+      setSelectedTextInMessage(selectedText);
+      setHighlightedText(selectedText);
+      setSelectedText('');
+      setChatOpen(true);
+      toast.success('Explicação solicitada! 💡', { duration: 2 });
     }
   };
 
@@ -487,6 +537,8 @@ const PDFStudyApp = () => {
     if (messages.length === 0) return;
     if (window.confirm('Tem certeza que deseja limpar todas as mensagens?')) {
       setMessages([]);
+      setSelectedTextInMessage('');
+      setInput('');
       toast.success('Chat limpo!', { duration: 2 });
     }
   };
@@ -500,15 +552,36 @@ const PDFStudyApp = () => {
       return;
     }
 
-    const contextInfo = `Contexto do Documento:
+    let contextInfo = '';
+
+    if (selectedTextInMessage) {
+      // Quando há texto selecionado, deixar claro que é o foco principal
+      contextInfo = `INSTRUÇÕES IMPORTANTES:
+Você está trabalhando com um texto ESPECÍFICO selecionado pelo usuário.
+
+TEXTO SELECIONADO (FOCO PRINCIPAL):
+"""
+${selectedTextInMessage}
+"""
+
+Contexto do Documento:
 - PDF: "${pdfFile || 'documento'}"
 - Página: ${currentPage} de ${totalPages}
-${selectedText ? `- Texto selecionado: "${selectedText}"` : ''}
+
+IMPORTANTE: Trabalhe PRINCIPALMENTE com o texto selecionado acima.
+Use o contexto da página apenas como referência adicional se necessário.
+A resposta deve focar no texto selecionado, não em toda a página.`;
+    } else {
+      // Quando não há texto selecionado, usar contexto completo da página
+      contextInfo = `Contexto do Documento:
+- PDF: "${pdfFile || 'documento'}"
+- Página: ${currentPage} de ${totalPages}
 
 Conteúdo da página atual:
 ${pageTextContent.substring(0, 3000)}${pageTextContent.length > 3000 ? '...' : ''}
 
 Responda com base neste contexto.`;
+    }
 
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -625,6 +698,7 @@ Responda com base neste contexto.`;
     } finally {
       setLoading(false);
       setSelectedText('');
+      setSelectedTextInMessage(''); // Limpa a referência após enviar
     }
   };
 
@@ -870,63 +944,54 @@ Responda com base neste contexto.`;
         )}
 
         {/* Área Central */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Toolbar */}
-          <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700' : 'bg-gradient-to-r from-white via-blue-50/30 to-purple-50/20 border-gray-200'} shadow-lg border-b px-4 py-2.5 flex items-center justify-between gap-4 flex-wrap backdrop-blur-sm transition-colors duration-300`}>
-            <div className="flex items-center gap-3">
+          <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700' : 'bg-gradient-to-r from-white via-blue-50/30 to-purple-50/20 border-gray-200'} shadow-lg border-b px-3 py-2 flex items-center justify-between gap-2 flex-nowrap backdrop-blur-sm transition-colors duration-300 overflow-x-auto`}>
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setLeftSidebarOpen(!leftSidebarOpen)}
-                className={`p-2.5 rounded-xl transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
-                title="Toggle Sidebar"
+                className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
+                title="Miniaturas"
               >
-                <Menu size={20} />
+                <Menu size={18} />
               </button>
-              <div className={`h-8 w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
+              <div className={`h-6 w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg hover:from-blue-700 hover:to-blue-600 text-xs font-semibold shadow-sm hover:shadow-md transition-all duration-200"
               >
-                <Upload size={18} />
-                Abrir PDF
+                <Upload size={16} />
+                Abrir
               </button>
               <input ref={fileInputRef} type="file" accept="application/pdf" onChange={handleFileUpload} className="hidden" />
-              {pdfFile && (
-                <button
-                  onClick={() => window.print()}
-                  className={`p-2.5 rounded-xl transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
-                  title="Imprimir"
-                >
-                  <Printer size={20} />
-                </button>
-              )}
             </div>
 
             {pdfDoc && (
               <>
-                <div className={`flex items-center gap-2 ${darkMode ? 'bg-gray-700/50' : 'bg-white/80'} px-3 py-1.5 rounded-xl shadow-sm backdrop-blur-sm`}>
+                <div className={`flex items-center gap-1 ${darkMode ? 'bg-gray-700/50' : 'bg-white/80'} px-2 py-1 rounded-lg shadow-sm backdrop-blur-sm`}>
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
+                    className={`p-1.5 rounded transition-all duration-200 ${
                       currentPage === 1
                         ? 'opacity-40 cursor-not-allowed'
                         : `${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`
                     }`}
                     title="Primeira página"
                   >
-                    <Home size={18} />
+                    <Home size={16} />
                   </button>
                   <button
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
+                    className={`p-1.5 rounded transition-all duration-200 ${
                       currentPage === 1
                         ? 'opacity-40 cursor-not-allowed'
                         : `${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`
                     }`}
                     title="Página anterior"
                   >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={16} />
                   </button>
                   <input
                     type="text"
@@ -939,37 +1004,37 @@ Responda com base neste contexto.`;
                         else setPageInput(currentPage.toString());
                       }
                     }}
-                    className={`w-16 px-3 py-1.5 text-center border-2 rounded-lg font-semibold transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
+                    className={`w-12 px-2 py-1 text-center border rounded text-xs font-medium transition-all duration-200 focus:ring-2 focus:ring-blue-400 ${
                       darkMode ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                   />
-                  <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>/ {totalPages}</span>
+                  <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>/{totalPages}</span>
                   <button
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
+                    className={`p-1.5 rounded transition-all duration-200 ${
                       currentPage === totalPages
                         ? 'opacity-40 cursor-not-allowed'
                         : `${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`
                     }`}
                     title="Próxima página"
                   >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={16} />
                   </button>
                 </div>
 
-                <div className={`flex items-center gap-2 ${darkMode ? 'bg-gray-700/50' : 'bg-white/80'} px-3 py-1.5 rounded-xl shadow-sm backdrop-blur-sm`}>
+                <div className={`flex items-center gap-1 ${darkMode ? 'bg-gray-700/50' : 'bg-white/80'} px-2 py-1 rounded-lg shadow-sm backdrop-blur-sm`}>
                   <button
                     onClick={() => setScale(Math.max(0.5, scale - 0.25))}
-                    className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
+                    className={`p-1.5 rounded transition-all duration-200 ${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
                     title="Diminuir zoom"
                   >
-                    <ZoomOut size={20} />
+                    <ZoomOut size={16} />
                   </button>
                   <select
                     value={scale}
                     onChange={(e) => setScale(parseFloat(e.target.value))}
-                    className={`px-3 py-1.5 border-2 rounded-lg text-sm font-semibold transition-all duration-200 focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
+                    className={`px-2 py-1 border rounded text-xs font-medium transition-all duration-200 focus:ring-2 focus:ring-blue-400 ${
                       darkMode ? 'bg-gray-600 border-gray-500 text-white' : 'bg-white border-gray-300 text-gray-900'
                     }`}
                   >
@@ -982,10 +1047,10 @@ Responda com base neste contexto.`;
                   </select>
                   <button
                     onClick={() => setScale(Math.min(3, scale + 0.25))}
-                    className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
+                    className={`p-1.5 rounded transition-all duration-200 ${darkMode ? 'hover:bg-gray-600 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
                     title="Aumentar zoom"
                   >
-                    <ZoomIn size={20} />
+                    <ZoomIn size={16} />
                   </button>
                 </div>
 
@@ -1048,46 +1113,43 @@ Responda com base neste contexto.`;
                   </button>
                   <button
                     onClick={toggleFullscreen}
-                    className={`p-2.5 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
+                    className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
                     title={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}
                   >
-                    {fullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                    {fullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
                   </button>
                 </div>
               </>
             )}
 
-            <div className={`flex items-center gap-3 ${darkMode ? 'border-gray-600' : 'border-gray-300'} border-l pl-3`}>
+            <div className={`flex items-center gap-2 ${darkMode ? 'border-gray-600' : 'border-gray-300'} border-l pl-2`}>
               <button
                 onClick={() => setShowKeyboardShortcuts(true)}
-                className={`p-2.5 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
-                title="Atalhos de teclado (? ou F1)"
+                className={`p-2 rounded-lg transition-all duration-200 ${darkMode ? 'hover:bg-gray-700 text-gray-300 hover:text-white' : 'hover:bg-gray-100 text-gray-700 hover:text-gray-900'}`}
+                title="Atalhos de teclado"
               >
-                <HelpCircle size={20} />
+                <HelpCircle size={16} />
               </button>
               <button
                 onClick={() => setDarkMode(!darkMode)}
-                className={`p-2.5 rounded-lg transition-all duration-200 text-2xl ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                className={`p-2 rounded-lg transition-all duration-200 text-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
                 title={`Modo ${darkMode ? 'claro' : 'escuro'}`}
               >
                 {darkMode ? '☀️' : '🌙'}
               </button>
-              <div className={`h-8 w-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`} />
               <button
                 onClick={() => setSettingsOpen(!settingsOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-500 text-white rounded-xl hover:from-gray-700 hover:to-gray-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-gray-600 to-gray-500 text-white rounded-lg hover:from-gray-700 hover:to-gray-600 text-xs font-semibold shadow-sm hover:shadow-md transition-all duration-200"
                 title="Configurações"
               >
-                <Settings size={18} />
-                Config
+                <Settings size={16} />
               </button>
               <button
                 onClick={() => setChatOpen(!chatOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                title="Abrir chat IA"
+                className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-lg hover:from-purple-700 hover:to-purple-600 text-xs font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                title="Chat IA"
               >
-                <MessageSquare size={18} />
-                Chat IA
+                <MessageSquare size={16} />
               </button>
               <button
                 onClick={async () => {
@@ -1099,10 +1161,10 @@ Responda com base neste contexto.`;
                     toast.error('Erro ao fazer logout', { duration: 3 });
                   }
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-700 hover:to-red-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
-                title="Fazer logout"
+                className="p-2 rounded-lg transition-all duration-200 text-red-400 hover:bg-red-900/30 hover:text-red-300"
+                title="Sair"
               >
-                <LogOut size={18} />
+                <LogOut size={16} />
               </button>
             </div>
           </div>
@@ -1232,32 +1294,78 @@ Responda com base neste contexto.`;
                 </div>
                 
                 {selectedText && (
-                  <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white shadow-2xl rounded-2xl p-5 flex items-center gap-4 border-2 border-purple-300 z-30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex flex-col gap-2.5">
+                  <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-2.5 flex items-center gap-2 border-2 border-purple-300 dark:border-purple-600 z-30 backdrop-blur-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {/* Botão: Pergunte a IA */}
+                    <div className="group relative">
                       <button
-                        onClick={copyToChat}
-                        className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        onClick={askAI}
+                        className="p-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Pergunte a IA"
                       >
-                        {copied ? <Check size={18} /> : <MessageSquare size={18} />}
-                        {copied ? 'Copiado!' : 'Enviar para Chat'}
+                        <MessageSquare size={14} />
                       </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Pergunte a IA
+                      </div>
+                    </div>
+
+                    {/* Botão: Traduzir */}
+                    <div className="group relative">
+                      <button
+                        onClick={translateText}
+                        className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Traduzir"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                          <path d="M5 8l6 6" />
+                          <path d="M4 14l10-10" />
+                          <path d="M20 4h-6m6 0v6" />
+                          <path d="M14 14l-4 4m0-6l4 4" />
+                        </svg>
+                      </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Traduzir
+                      </div>
+                    </div>
+
+                    {/* Botão: Explique isso */}
+                    <div className="group relative">
+                      <button
+                        onClick={explainText}
+                        className="p-2 rounded-lg bg-green-600 hover:bg-green-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Explique isso"
+                      >
+                        <HelpCircle size={14} />
+                      </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        Explique isso
+                      </div>
+                    </div>
+
+                    {/* Botão: Copiar */}
+                    <div className="group relative">
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(selectedText);
                           setCopied(true);
                           setTimeout(() => setCopied(false), 2000);
                         }}
-                        className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-gray-600 to-gray-500 text-white rounded-xl hover:from-gray-700 hover:to-gray-600 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                        className="p-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200 hover:scale-110 shadow-md"
+                        title="Copiar"
                       >
-                        <Copy size={18} />
-                        Copiar Texto
+                        {copied ? <Check size={14} /> : <Copy size={14} />}
                       </button>
+                      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 px-3 py-1.5 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                        {copied ? 'Copiado!' : 'Copiar'}
+                      </div>
                     </div>
+
+                    {/* Botão: Fechar */}
                     <button
                       onClick={() => setSelectedText('')}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 ml-1"
                     >
-                      <X size={20} />
+                      <X size={14} className="text-gray-600 dark:text-gray-400" />
                     </button>
                   </div>
                 )}
@@ -1266,36 +1374,36 @@ Responda com base neste contexto.`;
           </div>
 
           {pdfDoc && (
-            <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700 text-gray-300' : 'bg-gradient-to-r from-white via-blue-50/20 to-purple-50/10 border-gray-200 text-gray-700'} border-t px-4 py-2.5 text-sm font-medium flex items-center justify-between shadow-lg backdrop-blur-sm transition-colors duration-300`}>
-              <div className="flex items-center gap-4">
-                <span className="flex items-center gap-2 font-semibold">
-                  <File size={16} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
+            <div className={`${darkMode ? 'bg-gradient-to-r from-gray-800 via-gray-750 to-gray-800 border-gray-700 text-gray-300' : 'bg-gradient-to-r from-white via-blue-50/20 to-purple-50/10 border-gray-200 text-gray-700'} border-t px-4 py-2 text-xs font-medium flex items-center justify-between shadow-lg backdrop-blur-sm transition-colors duration-300`}>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1.5 font-semibold">
+                  <File size={14} className={darkMode ? 'text-blue-400' : 'text-blue-600'} />
                   {pdfFile}
                 </span>
                 <span className={darkMode ? 'text-gray-600' : 'text-gray-400'}>•</span>
-                <span className="font-semibold">
-                  Página {currentPage}{pageMode === 'double' && currentPage < totalPages ? `-${currentPage + 1}` : ''} de {totalPages}
+                <span>
+                  Pág {currentPage}/{totalPages}
                 </span>
                 <span className={darkMode ? 'text-gray-600' : 'text-gray-400'}>•</span>
-                <span className="font-semibold">
-                  Zoom: {Math.round(scale * 100)}%
+                <span>
+                  {Math.round(scale * 100)}%
                 </span>
-                {pageMode === 'double' && (
+                {pageMode === 'double' && currentPage < totalPages && (
                   <>
                     <span className={darkMode ? 'text-gray-600' : 'text-gray-400'}>•</span>
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <BookOpen size={16} className={darkMode ? 'text-purple-400' : 'text-purple-600'} />
-                      Modo Livro
+                    <span className="flex items-center gap-1">
+                      <BookOpen size={14} className={darkMode ? 'text-purple-400' : 'text-purple-600'} />
+                      Livro
                     </span>
                   </>
                 )}
               </div>
               {bookmarks.length > 0 && (
-                <span className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-semibold ${
+                <span className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${
                   darkMode ? 'bg-purple-900/30 text-purple-300' : 'bg-purple-100 text-purple-700'
                 }`}>
-                  <Bookmark size={16} fill="currentColor" />
-                  {bookmarks.length} marcador{bookmarks.length > 1 ? 'es' : ''}
+                  <Bookmark size={12} fill="currentColor" />
+                  {bookmarks.length}
                 </span>
               )}
             </div>
@@ -1341,23 +1449,12 @@ Responda com base neste contexto.`;
                   <label className={`block text-sm font-bold mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
                     Modelo
                   </label>
-                  <select
-                    value={modelName}
-                    onChange={(e) => setModelName(e.target.value)}
-                    className={`w-full p-4 border-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
-                      darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
-                    }`}
-                  >
-                    {llmProviders[llmProvider].models.map((model) => (
-                      <option key={model} value={model}>{model}</option>
-                    ))}
-                  </select>
                   <input
                     type="text"
                     value={modelName}
                     onChange={(e) => setModelName(e.target.value)}
-                    placeholder="Ou digite um modelo personalizado"
-                    className={`w-full p-4 border-2 rounded-xl mt-3 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
+                    placeholder="Ex: claude-sonnet-4-20250514, gpt-4o, gemini-1.5-pro"
+                    className={`w-full p-4 border-2 rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-500 ${
                       darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                     }`}
                   />
@@ -1477,36 +1574,6 @@ Responda com base neste contexto.`;
                       <span className="font-medium">Página anterior</span>
                       <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>←</kbd>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Primeira página</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Home</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Última página</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>End</kbd>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Zoom */}
-                <div className={`p-5 rounded-xl border-2 ${darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gradient-to-r from-green-50 to-green-100 border-green-200'}`}>
-                  <h3 className={`text-xl font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-green-300' : 'text-green-900'}`}>
-                    <Search size={22} />
-                    Zoom
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Aumentar zoom</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Ctrl +</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Diminuir zoom</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Ctrl -</kbd>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">Zoom padrão (150%)</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>Ctrl 0</kbd>
-                    </div>
                   </div>
                 </div>
 
@@ -1545,7 +1612,7 @@ Responda com base neste contexto.`;
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Mostrar este painel</span>
-                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>? ou F1</kbd>
+                      <kbd className={`px-3 py-2 rounded-lg font-mono font-bold shadow-sm ${darkMode ? 'bg-gray-600 text-white' : 'bg-white text-gray-900'}`}>F1</kbd>
                     </div>
                   </div>
                 </div>
@@ -1563,97 +1630,41 @@ Responda com base neste contexto.`;
 
         {/* Painel do Chat */}
         {chatOpen && (
-          <div className={`w-96 ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
-            <div className="bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white p-5 flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                  <MessageSquare size={26} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold">Assistente IA</h2>
-                  <p className="text-sm opacity-95 font-medium">{llmProviders[llmProvider].name}</p>
-                </div>
+          <div className={`w-[26rem] ${darkMode ? 'bg-gradient-to-b from-gray-800 to-gray-900 text-white border-gray-700' : 'bg-white border-gray-200'} shadow-2xl flex flex-col border-l-2 transition-colors duration-300`}>
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-2.5 flex items-center justify-between border-b border-purple-700/50">
+              <div className="flex items-center gap-2">
+                <MessageSquare size={20} />
+                <span className="font-bold text-base">
+                  {llmProviders[llmProvider].name.split(' ')[0]}
+                </span>
               </div>
               <button
                 onClick={() => setChatOpen(false)}
-                className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200"
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-all duration-200"
               >
-                <X size={22} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Controles do Chat - Modelo e Limpar */}
-            <div className={`p-4 border-b flex items-center gap-3 ${
-              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
-            }`}>
-              {/* Select de Modelo */}
-              <div className="flex-1">
-                <label className={`block text-xs font-semibold mb-1.5 ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Modelo IA
-                </label>
-                <select
-                  value={modelName}
-                  onChange={(e) => setModelName(e.target.value)}
-                  className={`w-full px-3 py-2 border-2 rounded-lg text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
-                    darkMode 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  }`}
-                >
-                  {llmProviders[llmProvider].models.map((model) => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Botão Limpar Chat */}
-              <div className="flex flex-col">
-                <label className="block text-xs font-semibold mb-1.5 opacity-0 select-none">.</label>
-                <button
-                  onClick={clearChat}
-                  disabled={messages.length === 0}
-                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center gap-2 whitespace-nowrap ${
-                    messages.length === 0
-                      ? 'opacity-40 cursor-not-allowed bg-gray-200 text-gray-500'
-                      : darkMode
-                        ? 'bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-800 hover:border-red-700'
-                        : 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 hover:border-red-300'
-                  }`}
-                  title="Limpar todas as mensagens"
-                >
-                  <X size={16} />
-                  Limpar
-                </button>
-              </div>
+            {/* Controles do Chat - Limpar */}
+            <div className={`px-4 py-2 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'} flex items-center gap-2 justify-end`}>
+              {/* Botão limpar compacto */}
+              <button
+                onClick={clearChat}
+                disabled={messages.length === 0}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
+                  messages.length === 0
+                    ? 'opacity-40 cursor-not-allowed bg-gray-700 text-gray-500'
+                    : darkMode
+                      ? 'bg-red-900/30 hover:bg-red-900/50 text-red-300 border border-red-800'
+                      : 'bg-red-50 hover:bg-red-100 text-red-700 border border-red-200'
+                }`}
+                title="Limpar mensagens"
+              >
+                <X size={14} />
+                Limpar
+              </button>
             </div>
-
-            {messages.length === 0 && pdfDoc && (
-              <div className={`p-5 border-b ${darkMode ? 'bg-gray-700/30 border-gray-600' : 'bg-gradient-to-r from-purple-50 to-blue-50 border-gray-200'}`}>
-                <p className={`text-sm font-bold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>Sugestões rápidas:</p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setInput('Resuma esta página')}
-                    className="text-sm px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl hover:from-purple-700 hover:to-purple-600 font-semibold shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  >
-                    📝 Resumir página
-                  </button>
-                  <button
-                    onClick={() => setInput('Explique os conceitos principais desta página')}
-                    className="text-sm px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 font-semibold shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  >
-                    💡 Explicar conceitos
-                  </button>
-                  <button
-                    onClick={() => setInput('Crie perguntas de estudo sobre este conteúdo')}
-                    className="text-sm px-4 py-2 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-xl hover:from-green-700 hover:to-green-600 font-semibold shadow-sm hover:shadow-md transition-all duration-200 transform hover:scale-105"
-                  >
-                    ❓ Criar quiz
-                  </button>
-                </div>
-              </div>
-            )}
 
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               {messages.length === 0 ? (
@@ -1664,7 +1675,7 @@ Responda com base neste contexto.`;
                   <p className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Comece uma conversa!
                   </p>
-                  <p className="text-sm mt-2">Selecione texto no PDF ou use as sugestões acima</p>
+                  <p className="text-sm mt-2">Selecione texto no PDF ou escreva sua pergunta</p>
                   {!apiKey && (
                     <button
                       onClick={() => setSettingsOpen(true)}
@@ -1675,19 +1686,27 @@ Responda com base neste contexto.`;
                   )}
                 </div>
               ) : (
-                messages.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div
-                      className={`max-w-[85%] p-4 rounded-2xl shadow-md ${
-                        msg.role === 'user'
-                          ? 'bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white'
-                          : `${darkMode ? 'bg-gray-700 text-gray-100 border-2 border-gray-600' : 'bg-white text-gray-800 border-2 border-gray-200'}`
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                messages.map((msg, idx) => {
+                  const hasSelectedText = msg.role === 'user' && msg.content.includes(selectedTextInMessage);
+                  return (
+                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div
+                        className={`max-w-[85%] p-4 rounded-2xl shadow-md transition-all ${
+                          msg.role === 'user'
+                            ? `bg-gradient-to-r from-purple-600 via-purple-500 to-blue-600 text-white ${hasSelectedText ? 'ring-2 ring-yellow-300 ring-offset-2' : ''}`
+                            : `${darkMode ? 'bg-gray-700 text-gray-100 border-2 border-gray-600' : 'bg-white text-gray-800 border-2 border-gray-200'}`
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                        {hasSelectedText && (
+                          <div className="mt-2 text-xs opacity-75 border-t border-current pt-2">
+                            📌 Contém texto selecionado
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               {loading && (
                 <div className="flex justify-start">
@@ -1705,12 +1724,15 @@ Responda com base neste contexto.`;
             </div>
 
             <div className={`p-5 border-t-2 ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gradient-to-r from-gray-50 to-blue-50/30 border-gray-200'} shadow-lg`}>
-              {pdfFile && (
-                <div className={`text-xs mb-3 flex items-center gap-2 font-medium px-3 py-2 rounded-lg ${
-                  darkMode ? 'text-gray-400 bg-gray-700/50' : 'text-gray-600 bg-white/70'
+              {selectedTextInMessage && (
+                <div className={`text-xs mb-3 flex items-center gap-2 font-medium px-3 py-2 rounded-lg border-l-4 ${
+                  darkMode
+                    ? 'text-blue-300 bg-blue-900/30 border-blue-600'
+                    : 'text-blue-700 bg-blue-100 border-blue-400'
                 }`}>
-                  <FileText size={14} />
-                  Página {currentPage} de {totalPages} - {pdfFile}
+                  <span className="flex-1 truncate" title={selectedTextInMessage}>
+                    💬 {selectedTextInMessage}
+                  </span>
                 </div>
               )}
               <div className="flex gap-3">
